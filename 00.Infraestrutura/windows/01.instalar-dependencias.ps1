@@ -156,7 +156,7 @@ Write-Host ""
 Write-Host "PROXIMOS PASSOS:" -ForegroundColor Yellow
 Write-Host "  1. Feche este terminal para aplicar as variaveis de PATH"  -ForegroundColor Yellow
 Write-Host "  2. Abra o Docker Desktop e aguarde o icone estabilizar"    -ForegroundColor Yellow
-Write-Host "  3. Abra um novo terminal e rode: .\02.verify-installs.ps1" -ForegroundColor Yellow
+Write-Host "  3. Abra um novo terminal e rode: .\02.verificar-instalacoes.ps1" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Pressione qualquer tecla para fechar..." -ForegroundColor DarkGray
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

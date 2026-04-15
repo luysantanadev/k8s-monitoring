@@ -1,3 +1,4 @@
+#Requires -Version 7.0
 <#
 .SYNOPSIS
     Verifica se todas as ferramentas do workshop estão instaladas e o Docker Desktop está em execução.
@@ -6,17 +7,34 @@
     Checa a presença de docker, k3d, kubectl e helm no PATH, exibe as versões instaladas
     e confirma que o daemon do Docker está respondendo.
 
+.EXAMPLE
+    .\02.verificar-instalacoes.ps1
+    Executa todas as verificações e exibe o resultado.
+
 .NOTES
-    Execute em um novo terminal após rodar 01.install-dependencies.ps1 e abrir o Docker Desktop.
+    Execute em um novo terminal após rodar 01.instalar-dependencias.ps1 e abrir o Docker Desktop.
 #>
+[CmdletBinding()]
+param()
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
 $ok = $true
 
+# Recarrega o PATH do registro do Windows antes de qualquer verificação.
+# Necessário quando o terminal foi aberto antes ou logo após as instalações
+# do winget propagarem os valores no registro do usuário.
+$machinePath = [System.Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine) ?? ''
+$userPath    = [System.Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::User)   ?? ''
+$env:Path    = ($machinePath + ';' + $userPath) -replace ';{2,}', ';'
+
 # Flags de versão por ferramenta — cada uma tem sua própria convenção.
+# kubectl --short foi removido na versão 1.29; usa-se apenas --client.
 $versionArgs = @{
     docker  = @('--version')
     k3d     = @('--version')
-    kubectl = @('version', '--client', '--short')
+    kubectl = @('version', '--client')
     helm    = @('version', '--short')
 }
 
@@ -54,7 +72,7 @@ if ($LASTEXITCODE -eq 0) {
 
 Write-Host ""
 if ($ok) {
-    Write-Host "  Tudo pronto! Pode rodar: .\scripts\03.setup-k3d-multi-node.ps1" -ForegroundColor Green
+    Write-Host "  Tudo pronto! Pode rodar: .\03.setup-k3d-multi-node.ps1" -ForegroundColor Green
 } else {
     Write-Host "  Corrija os itens acima antes de continuar." -ForegroundColor Red
     exit 1

@@ -44,7 +44,7 @@ write_check() {
 declare -A VERSION_ARGS=(
   [docker]="--version"
   [k3d]="--version"
-  [kubectl]="version --client --short"
+  [kubectl]="version --client"
   [helm]="version --short"
 )
 
