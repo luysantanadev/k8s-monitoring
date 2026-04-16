@@ -11,11 +11,12 @@
       Remocao: lista bases existentes por numero e remove a selecionada.
 
 .EXAMPLE
-    .\04.setup-database.ps1
+    .\05.configurar-cnpg-criar-base-pgsql.ps1
     Executa o assistente interativo de gerenciamento de bases.
 
 .NOTES
     Pre-requisito: cluster k3d 'monitoramento' em execucao (03.criar-cluster-k3d.ps1),
+    monitoramento instalado (04.configurar-monitoramento.ps1) — necessario para ServiceMonitor.
     kubectl e helm no PATH.
 #>
 [CmdletBinding()]
@@ -173,7 +174,7 @@ metadata:
   namespace: $Namespace
   labels:
     app: $Database
-    managed-by: 04.configurar-cnpg-criar-base-pgsql
+    managed-by: 05.configurar-cnpg-criar-base-pgsql
 spec:
   entryPoints:
     - postgres
@@ -186,6 +187,32 @@ spec:
     $tcpManifest | kubectl apply -f -
     if ($LASTEXITCODE -ne 0) { Write-Warn "IngressRouteTCP nao aplicado. Porta 5432 pode ja estar em uso por outra instancia." }
     else { Write-Success "IngressRouteTCP aplicado. PostgreSQL acessivel em localhost:5432." }
+
+    # --- ServiceMonitor (Prometheus) ---
+    # CNPG cria automaticamente o servico $Database-cluster-metrics (porta 9187) para cada cluster.
+    # O ServiceMonitor instrui o Prometheus a coletar metricas desse endpoint.
+    Write-Step "Criando ServiceMonitor para PostgreSQL '$Database'..."
+    $smCnpg = @"
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: postgres-$Database
+  namespace: $Namespace
+  labels:
+    app: $Database
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: $Database-cluster
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics
+"@
+    $smCnpg | kubectl apply -f -
+    if ($LASTEXITCODE -ne 0) { Write-Warn "ServiceMonitor nao aplicado. Metricas do PostgreSQL nao serao coletadas." }
+    else { Write-Success "ServiceMonitor criado. Metricas disponiveis no Grafana." }
 
     # --- Resumo ---
     Write-Host ""
@@ -244,6 +271,7 @@ if ($action -eq '2') {
 
     kubectl -n $ns delete secret "$release-credentials" --ignore-not-found | Out-Null
     kubectl -n $ns delete ingressroutetcp "postgres-$release" --ignore-not-found | Out-Null
+    kubectl -n $ns delete servicemonitor "postgres-$release" --ignore-not-found | Out-Null
 
     Write-Success "Base '$release' removida do namespace '$ns'."
     Write-Host ""

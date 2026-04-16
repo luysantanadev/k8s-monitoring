@@ -108,13 +108,39 @@ if ($action -eq '1') {
         $InstanceName = $inputName
     } while (-not $InstanceName)
 
-    # --- Valores Helm ---
-    # Chaves com ponto (ex: Security.UnsecuredAccessAllowed) sao passadas via --values -
-    # para evitar problemas de escape do PowerShell com --set.
-    $helmValues = @"
+    # --- Licenca RavenDB ---
+    # O chart faz b64enc do campo license; se o valor for nil (nao declarado) o Helm falha.
+    # O usuario deve colar o JSON da licenca (obtido em ravendb.net/buy).
+    Write-Host ""
+    Write-Host "  Cole o JSON da licenca RavenDB e pressione ENTER duas vezes." -ForegroundColor Cyan
+    Write-Host "  (Licenca gratuita Developer: https://ravendb.net/buy)" -ForegroundColor Gray
+    Write-Host ""
+
+    $licenseLines = [System.Collections.Generic.List[string]]::new()
+    do {
+        $line = Read-Host "  Licenca"
+        if ($line) { $licenseLines.Add($line) }
+    } while ($line)
+
+    $License = ($licenseLines -join '').Trim()
+
+    if (-not $License) {
+        Write-Warn "Nenhuma licenca informada. O deploy pode falhar ou o Studio ficara em modo limitado."
+        $License = ""
+    }
+
+    # --- Arquivo de valores Helm temporario ---
+    # O JSON da licenca contem aspas e chaves que quebram strings YAML inline.
+    # Solucao: bloco literal YAML (indicador '|') + arquivo temporario em vez de stdin.
+    # O bloco literal preserva o conteudo exatamente como digitado, sem necessidade de escape.
+    $tmpValues = [System.IO.Path]::GetTempFileName() -replace '\.tmp$', '.yaml'
+    try {
+        @"
 nodesCount: 1
 
 ravendb:
+  license: |
+    $License
   settings:
     "Security.UnsecuredAccessAllowed": "PublicNetwork"
     "Setup.Mode": "None"
@@ -129,17 +155,20 @@ resources:
 
 storage:
   size: 2Gi
-"@
+"@ | Set-Content $tmpValues -Encoding UTF8
 
     # --- Deploy via Helm ---
     Write-Step "Fazendo deploy do RavenDB '$InstanceName' no namespace '$Namespace'..."
 
-    $helmValues | helm upgrade --install $InstanceName ravendb/ravendb-cluster `
+    helm upgrade --install $InstanceName ravendb/ravendb-cluster `
         --namespace $Namespace `
         --create-namespace `
-        --values -
+        --values $tmpValues
 
     if ($LASTEXITCODE -ne 0) { Write-Fail "Helm install falhou. Verifique os logs acima." }
+    } finally {
+        Remove-Item $tmpValues -ErrorAction SilentlyContinue
+    }
     Write-Success "RavenDB '$InstanceName' implantado."
 
     # --- Ingress HTTP (Traefik) ---
@@ -179,6 +208,31 @@ spec:
     if ($LASTEXITCODE -ne 0) { Write-Warn "Ingress nao aplicado. RavenDB acessivel via port-forward." }
     else { Write-Success "Ingress criado para http://$IngressHost." }
 
+    # --- ServiceMonitor (Prometheus) ---
+    # RavenDB expoe metricas Prometheus nativamente em /metrics na mesma porta HTTP (8080).
+    Write-Step "Criando ServiceMonitor para RavenDB '$InstanceName'..."
+    $smRaven = @"
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ravendb-$InstanceName
+  namespace: $Namespace
+  labels:
+    app: $InstanceName
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: $InstanceName
+  endpoints:
+    - port: http
+      interval: 30s
+      path: /metrics
+"@
+    $smRaven | kubectl apply -f -
+    if ($LASTEXITCODE -ne 0) { Write-Warn "ServiceMonitor nao aplicado. Metricas do RavenDB nao serao coletadas." }
+    else { Write-Success "ServiceMonitor criado. Metricas disponiveis no Grafana." }
+
     # --- Resumo ---
     Write-Host ""
     Write-Host "============================================" -ForegroundColor Green
@@ -205,6 +259,10 @@ spec:
     Write-Host "    http://${InstanceName}-ravendb-cluster.${Namespace}.svc.cluster.local:8080"
     Write-Host ""
     Write-Warn "Modo nao-seguro: use apenas para desenvolvimento/workshop."
+    Write-Host ""
+    Write-Host "  Licenca gratuita (Community/Developer):" -ForegroundColor Yellow
+    Write-Host "    https://ravendb.net/buy  →  'Developer' (gratuito)"
+    Write-Host "    Cole a licenca no Management Studio em: About > Register"
     Write-Host ""
 }
 
@@ -243,6 +301,7 @@ if ($action -eq '2') {
     if ($LASTEXITCODE -ne 0) { Write-Fail "Falha ao remover o release Helm '$name'." }
 
     kubectl -n $ns delete ingress "ravendb-$name" --ignore-not-found | Out-Null
+    kubectl -n $ns delete servicemonitor "ravendb-$name" --ignore-not-found | Out-Null
 
     # O chart nao remove PVCs automaticamente para evitar perda acidental de dados.
     Write-Warn "PVC do RavenDB pode ter ficado para tras. Para remover:"

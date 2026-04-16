@@ -6,7 +6,7 @@
     Instala kube-prometheus-stack, Loki, Tempo, Pyroscope e Alloy via Helm
     no namespace monitoring. Ao final aplica os datasources extras do Grafana.
 .NOTES
-    Arquivo : 05.configurar-monitoramento.ps1
+    Arquivo : 04.configurar-monitoramento.ps1
     Prereqs : cluster monitoramento em execucao (03.criar-cluster-k3d.ps1)
     Proximo : adicionar entradas no hosts e acessar http://grafana.monitoramento.local
 #>

@@ -30,8 +30,8 @@ Run scripts **in order**. Every script is idempotent — re-running is safe.
 .\00.scripts\windows\01.install-dependencies.ps1   # winget: k3d, kubectl, helm
 .\00.scripts\windows\02.verify-installs.ps1        # sanity check
 .\00.scripts\windows\03.setup-k3d-multi-node.ps1   # create cluster + Traefik + CloudNativePG
-.\00.scripts\windows\04.setup-database.ps1         # PostgreSQL via CloudNativePG
-.\00.scripts\windows\05.setup-monitoring.ps1       # full observability stack
+.\00.Infraestrutura\windows\04.configurar-monitoramento.ps1        # full observability stack
+.\00.Infraestrutura\windows\05.configurar-cnpg-criar-base-pgsql.ps1  # PostgreSQL via CloudNativePG
 ```
 
 ### Linux

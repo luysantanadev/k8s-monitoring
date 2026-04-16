@@ -134,7 +134,8 @@ if ($action -eq '1') {
         --set master.resources.requests.memory=128Mi `
         --set master.resources.limits.cpu=500m `
         --set master.resources.limits.memory=256Mi `
-        --set master.persistence.size=512Mi
+        --set master.persistence.size=512Mi `
+        --set metrics.enabled=true
 
     if ($LASTEXITCODE -ne 0) { Write-Fail "Helm install falhou. Verifique os logs acima." }
     Write-Success "Instancia Redis '$InstanceName' criada."
@@ -162,6 +163,33 @@ spec:
     $tcpManifest | kubectl apply -f -
     if ($LASTEXITCODE -ne 0) { Write-Warn "IngressRouteTCP nao aplicado. Porta 6379 pode ja estar em uso por outra instancia." }
     else { Write-Success "IngressRouteTCP aplicado. Redis acessivel em localhost:6379." }
+
+    # --- ServiceMonitor (Prometheus) ---
+    # O bitnami/redis com metrics.enabled=true implanta o redis_exporter como sidecar.
+    # O servico de metricas e $InstanceName-redis-metrics na porta 9121 (nome 'metrics').
+    Write-Step "Criando ServiceMonitor para Redis '$InstanceName'..."
+    $smRedis = @"
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: redis-$InstanceName
+  namespace: $Namespace
+  labels:
+    app: $InstanceName
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: redis
+      app.kubernetes.io/instance: $InstanceName
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics
+"@
+    $smRedis | kubectl apply -f -
+    if ($LASTEXITCODE -ne 0) { Write-Warn "ServiceMonitor nao aplicado. Metricas do Redis nao serao coletadas." }
+    else { Write-Success "ServiceMonitor criado. Metricas disponiveis no Grafana." }
 
     # --- Resumo ---
     Write-Host ""
@@ -218,6 +246,7 @@ if ($action -eq '2') {
     if ($LASTEXITCODE -ne 0) { Write-Fail "Falha ao remover o release Helm '$release'." }
 
     kubectl -n $ns delete ingressroutetcp "redis-$release" --ignore-not-found | Out-Null
+    kubectl -n $ns delete servicemonitor "redis-$release" --ignore-not-found | Out-Null
 
     # O chart bitnami/redis nao remove o PVC automaticamente; avisar o usuario
     Write-Warn "PVC do Redis pode ter ficado para tras. Para remover:"

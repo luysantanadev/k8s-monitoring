@@ -137,9 +137,10 @@ if ($action -eq '1') {
     } while (-not $InstanceName)
 
     # --- Derivar valores ---
-    $Username  = $InstanceName
-    $Password  = New-RandomPassword
-    $Svc       = "$InstanceName-svc"
+    $Username        = $InstanceName
+    $Password        = New-RandomPassword
+    $MetricsPassword = New-RandomPassword
+    $Svc             = "$InstanceName-svc"
 
     # --- Manifestos: Secret + MongoDBCommunity ---
     Write-Step "Aplicando Secret e MongoDBCommunity '$InstanceName' no namespace '$Namespace'..."
@@ -153,6 +154,15 @@ metadata:
 type: Opaque
 stringData:
   password: "$Password"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: $InstanceName-metrics-password
+  namespace: $Namespace
+type: Opaque
+stringData:
+  password: "$MetricsPassword"
 ---
 apiVersion: mongodbcommunity.mongodb.com/v1
 kind: MongoDBCommunity
@@ -177,6 +187,9 @@ spec:
         - name: dbAdminAnyDatabase
           db: admin
       scramCredentialsSecretName: $InstanceName-scram
+  prometheus:
+    passwordSecretRef:
+      name: $InstanceName-metrics-password
   statefulSet:
     spec:
       template:
@@ -231,6 +244,32 @@ spec:
     if ($LASTEXITCODE -ne 0) { Write-Warn "IngressRouteTCP nao aplicado. Porta 27017 pode ja estar em uso por outra instancia." }
     else { Write-Success "IngressRouteTCP aplicado. MongoDB acessivel em localhost:27017." }
 
+    # --- ServiceMonitor (Prometheus) ---
+    # O Community Operator com spec.prometheus habilita o mongodb_exporter na porta 9216.
+    # O port name no Service e 'prometheus' (convencao do operator).
+    Write-Step "Criando ServiceMonitor para MongoDB '$InstanceName'..."
+    $smMongo = @"
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mongodb-$InstanceName
+  namespace: $Namespace
+  labels:
+    app: $InstanceName
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: $InstanceName
+  endpoints:
+    - port: prometheus
+      interval: 30s
+      path: /metrics
+"@
+    $smMongo | kubectl apply -f -
+    if ($LASTEXITCODE -ne 0) { Write-Warn "ServiceMonitor nao aplicado. Metricas do MongoDB nao serao coletadas." }
+    else { Write-Success "ServiceMonitor criado. Metricas disponiveis no Grafana." }
+
     Write-Host "  Aguardar o pod ficar pronto:" -ForegroundColor Yellow
     Write-Host "    kubectl -n $Namespace get mongodbcommunity $InstanceName -w"
     Write-Host ""
@@ -278,8 +317,9 @@ if ($action -eq '2') {
     kubectl -n $ns delete mongodbcommunity $name --ignore-not-found
     if ($LASTEXITCODE -ne 0) { Write-Fail "Falha ao remover o MongoDBCommunity '$name'." }
 
-    kubectl -n $ns delete secret "$name-password" "$name-scram" --ignore-not-found | Out-Null
+    kubectl -n $ns delete secret "$name-password" "$name-scram" "$name-metrics-password" --ignore-not-found | Out-Null
     kubectl -n $ns delete ingressroutetcp "mongodb-$name" --ignore-not-found | Out-Null
+    kubectl -n $ns delete servicemonitor "mongodb-$name" --ignore-not-found | Out-Null
 
     # O operator nao remove o PVC automaticamente; avisar o usuario
     Write-Warn "PVC do MongoDB pode ter ficado para tras. Para remover:"
