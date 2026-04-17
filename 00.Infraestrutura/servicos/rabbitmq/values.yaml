@@ -7,7 +7,7 @@ replicaCount: 1
 
 ingress:
   enabled: true
-  hostname: rabbitmq.k3d.localhost
+  hostname: rabbitmq.monitoramento.local
   ingressClassName: traefik
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web

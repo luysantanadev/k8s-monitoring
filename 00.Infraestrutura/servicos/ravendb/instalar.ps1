@@ -5,7 +5,7 @@
 .NOTES
     Namespace  : ravendb   | Release: ravendb
     Modo       : Nao-seguro (workshop/dev) — sem TLS, sem autenticacao
-    UI         : http://ravendb.k3d.localhost  (adicionar ao /etc/hosts)
+    UI         : http://ravendb.monitoramento.local  (adicionar ao /etc/hosts)
     Metricas   : ServiceMonitor em /metrics porta 8080
     Licenca    : Editar services/ravendb/values.yaml (campo ravendb.license)
     Idempotente: re-executar e seguro.
@@ -47,7 +47,7 @@ Write-Success "RavenDB instalado."
 # ---------------------------------------------------------------------------
 # 4. Ingress HTTP (porta 8080 via porta 80)
 # ---------------------------------------------------------------------------
-Write-Step "Criando Ingress HTTP para ravendb.k3d.localhost..."
+Write-Step "Criando Ingress HTTP para ravendb.monitoramento.local..."
 @"
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -59,7 +59,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: ravendb.k3d.localhost
+    - host: ravendb.monitoramento.local
       http:
         paths:
           - path: /
@@ -71,7 +71,7 @@ spec:
                   number: 8080
 "@ | kubectl apply -f -
 if ($LASTEXITCODE -ne 0) { Write-Warn "Ingress nao aplicado." }
-else { Write-Success "RavenDB Studio em http://ravendb.k3d.localhost." }
+else { Write-Success "RavenDB Studio em http://ravendb.monitoramento.local." }
 
 # ---------------------------------------------------------------------------
 # 5. ServiceMonitor (Prometheus — metricas nativas em /metrics)
@@ -106,10 +106,10 @@ Write-Host "  RavenDB pronto!" -ForegroundColor Green
 Write-Host "============================================" -ForegroundColor Green
 Write-Host "  Namespace  : ravendb"
 Write-Host "  Modo       : Nao-seguro (dev/workshop)"
-Write-Host "  UI         : http://ravendb.k3d.localhost"
+Write-Host "  UI         : http://ravendb.monitoramento.local"
 Write-Host ""
 Write-Host "  Adicionar ao hosts (se necessario):" -ForegroundColor Yellow
-Write-Host "    127.0.0.1  ravendb.k3d.localhost"
+Write-Host "    127.0.0.1  ravendb.monitoramento.local"
 Write-Host ""
 Write-Host "  Aguardar pronto:" -ForegroundColor Yellow
 Write-Host "    kubectl -n ravendb get pods -w"

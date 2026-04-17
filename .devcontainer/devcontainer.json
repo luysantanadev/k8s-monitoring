@@ -1,36 +1,43 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
 {
-	"name": "Ubuntu",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"name": "k8s-monitoring",
 	"image": "mcr.microsoft.com/devcontainers/base:noble",
 	"features": {
+		// PowerShell para executar os scripts do projeto
 		"ghcr.io/devcontainers/features/powershell:2": {
 			"version": "lts"
+		},
+		// kubectl + helm (sem minikube — usamos k3d)
+		"ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+			"version": "latest",
+			"helm": "latest",
+			"minikube": "none"
+		},
+		// Docker CLI apontando para o socket do host (Docker-outside-of-Docker).
+		// Necessário para conectar o container à rede k3d e executar k3d kubeconfig.
+		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+			"version": "latest",
+			"installDockerBuildx": false
 		}
 	},
 
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
+	// postCreateCommand:
+	//   1. Instala rtk (token-optimized CLI proxy)
+	//   2. Instala k3d (mesmo binário usado no host)
+	//   3. Tenta configurar o kubectl para o cluster 'monitoramento'.
+	//      Se o cluster ainda não existir, o script avisa e sai com sucesso.
+	//      Re-execute manualmente após criar o cluster:
+	//        bash .devcontainer/setup-kubeconfig.sh
+	"postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh && rtk init -g && curl -fsSL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash && bash .devcontainer/setup-kubeconfig.sh || true",
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
-
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "uname -a",
-	"postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh && rtk init -g",
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"PeterMEFrandsen.rtk-inspector"
+				"PeterMEFrandsen.rtk-inspector",
+				// Kubernetes tools: visualização de recursos e integração com kubeconfig
+				"ms-kubernetes-tools.vscode-kubernetes-tools"
 			]
 		}
 	}
-
-
-	// Configure tool-specific properties.
-	// "customizations": {},
-
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
 }

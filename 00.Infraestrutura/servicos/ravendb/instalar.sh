@@ -3,7 +3,7 @@
 #
 # Namespace  : ravendb   | Release: ravendb
 # Modo       : Nao-seguro (workshop/dev) — sem TLS, sem autenticacao
-# UI         : http://ravendb.k3d.localhost
+# UI         : http://ravendb.monitoramento.local
 # Metricas   : ServiceMonitor em /metrics porta 8080
 # Idempotente: re-executar e seguro.
 set -euo pipefail
@@ -36,7 +36,7 @@ helm upgrade --install ravendb ravendb/ravendb-cluster \
 ok "RavenDB instalado."
 
 # 4. Ingress HTTP
-step "Criando Ingress HTTP para ravendb.k3d.localhost..."
+step "Criando Ingress HTTP para ravendb.monitoramento.local..."
 kubectl apply -f - <<'EOF'
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -48,7 +48,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: ravendb.k3d.localhost
+    - host: ravendb.monitoramento.local
       http:
         paths:
           - path: /
@@ -59,7 +59,7 @@ spec:
                 port:
                   number: 8080
 EOF
-ok "RavenDB Studio em http://ravendb.k3d.localhost."
+ok "RavenDB Studio em http://ravendb.monitoramento.local."
 
 # 5. ServiceMonitor
 step "Criando ServiceMonitor..."
@@ -88,10 +88,10 @@ echo -e "${GREEN}  RavenDB pronto!${NC}"
 echo -e "${GREEN}============================================${NC}"
 echo "  Namespace  : ravendb"
 echo "  Modo       : Nao-seguro (dev/workshop)"
-echo "  UI         : http://ravendb.k3d.localhost"
+echo "  UI         : http://ravendb.monitoramento.local"
 echo ""
 echo -e "  ${YELLOW}Adicionar ao hosts (se necessario):${NC}"
-echo "    127.0.0.1  ravendb.k3d.localhost"
+echo "    127.0.0.1  ravendb.monitoramento.local"
 echo ""
 echo -e "  ${YELLOW}Aguardar pronto:${NC}"
 echo "    kubectl -n ravendb get pods -w"

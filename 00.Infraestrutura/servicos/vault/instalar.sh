@@ -3,7 +3,7 @@
 #
 # Namespace  : vault   | Release: vault
 # Root Token : root    (dev mode — nao usar em producao)
-# UI         : http://vault.k3d.localhost
+# UI         : http://vault.monitoramento.local
 # Metricas   : ServiceMonitor em /v1/sys/metrics (bearerToken=root)
 # Idempotente: re-executar e seguro.
 set -euo pipefail
@@ -36,7 +36,7 @@ helm upgrade --install vault hashicorp/vault \
 ok "Vault instalado."
 
 # 4. Ingress HTTP
-step "Criando Ingress HTTP para vault.k3d.localhost..."
+step "Criando Ingress HTTP para vault.monitoramento.local..."
 kubectl apply -f - <<'EOF'
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -48,7 +48,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: vault.k3d.localhost
+    - host: vault.monitoramento.local
       http:
         paths:
           - path: /
@@ -59,7 +59,7 @@ spec:
                 port:
                   number: 8200
 EOF
-ok "Vault UI em http://vault.k3d.localhost."
+ok "Vault UI em http://vault.monitoramento.local."
 
 # 5. Secret de metricas + ServiceMonitor
 step "Criando Secret e ServiceMonitor para metricas..."
@@ -105,11 +105,11 @@ echo -e "${GREEN}  Vault pronto!${NC}"
 echo -e "${GREEN}============================================${NC}"
 echo "  Namespace  : vault"
 echo "  Root Token : root  (dev mode)"
-echo "  UI         : http://vault.k3d.localhost"
-echo "  API        : http://vault.k3d.localhost/v1"
+echo "  UI         : http://vault.monitoramento.local"
+echo "  API        : http://vault.monitoramento.local/v1"
 echo ""
 echo -e "  ${YELLOW}Adicionar ao hosts (se necessario):${NC}"
-echo "    127.0.0.1  vault.k3d.localhost"
+echo "    127.0.0.1  vault.monitoramento.local"
 echo ""
 echo -e "  ${YELLOW}Aguardar pronto:${NC}"
 echo "    kubectl -n vault get pods -w"

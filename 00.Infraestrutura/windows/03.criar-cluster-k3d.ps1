@@ -92,7 +92,7 @@ k3d cluster create monitoramento `
     --port "6379:6379@loadbalancer" `
     --port "27017:27017@loadbalancer" `
     --port "5672:5672@loadbalancer" `
-    --agents 2 `
+    --agents 3 `
     --k3s-arg "--disable=traefik@server:0" `
     --k3s-arg "--kubelet-arg=system-reserved=cpu=100m,memory=${sysReservedMem}@server:0" `
     --k3s-arg "--kubelet-arg=kube-reserved=cpu=100m,memory=128Mi@server:0" `
@@ -180,7 +180,6 @@ helm upgrade --install traefik traefik/traefik `
     --set "ports.amqp.hostPort=5672" `
     --set "ports.amqp.expose.default=true" `
     --set "ports.amqp.exposedPort=5672" `
-    --wait `
     --timeout 120s
 
 if ($LASTEXITCODE -ne 0) { Write-Fail "Falha ao instalar o Traefik." }

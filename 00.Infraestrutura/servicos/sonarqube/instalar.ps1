@@ -5,7 +5,7 @@
 .NOTES
     Namespace  : sonarqube  | Release: sonarqube
     Admin      : admin / Workshop_1_sonar
-    UI         : http://sonarqube.k3d.localhost  (adicionar ao /etc/hosts)
+    UI         : http://sonarqube.monitoramento.local  (adicionar ao /etc/hosts)
     Metricas   : PodMonitor (via values.yaml)
     Idempotente: re-executar e seguro.
 #>
@@ -53,11 +53,11 @@ Write-Host "============================================" -ForegroundColor Green
 Write-Host "  Namespace      : sonarqube"
 Write-Host "  Admin          : admin"
 Write-Host "  Senha          : Workshop_1_sonar"
-Write-Host "  UI             : http://sonarqube.k3d.localhost"
+Write-Host "  UI             : http://sonarqube.monitoramento.local"
 Write-Host "  Monitoring code: sonarWorkshop123"
 Write-Host ""
 Write-Host "  Adicionar ao hosts (se necessario):" -ForegroundColor Yellow
-Write-Host "    127.0.0.1  sonarqube.k3d.localhost"
+Write-Host "    127.0.0.1  sonarqube.monitoramento.local"
 Write-Host ""
 Write-Host "  Aguardar pronto:" -ForegroundColor Yellow
 Write-Host "    kubectl -n sonarqube get pods -w"

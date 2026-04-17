@@ -1,0 +1,40 @@
+---
+# RabbitmqCluster — gerenciado pelo RabbitMQ Cluster Operator (oficial)
+# O operator cria automaticamente: StatefulSet, Services (5672/15672/15692), ConfigMaps, Secrets
+# Credenciais admin ficam no secret 'rabbitmq-default-user' (namespace rabbitmq)
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: rabbitmq
+  namespace: rabbitmq
+  labels:
+    app: rabbitmq
+    version: "4"
+spec:
+  replicas: 1
+  # Imagem oficial Docker Hub — management plugin habilitado
+  image: rabbitmq:4-management
+
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+  persistence:
+    storage: 1Gi
+
+  rabbitmq:
+    # Define usuario e senha padrao (sobrescreve o gerado pelo operator)
+    additionalConfig: |
+      default_user = user
+      default_pass = Workshop123rabbit
+    # Plugins habilitados por padrao: rabbitmq_peer_discovery_k8s, rabbitmq_prometheus, rabbitmq_management
+    # Adicionar plugins extras se necessario:
+    # additionalPlugins:
+    #   - rabbitmq_shovel
+
+  service:
+    type: ClusterIP

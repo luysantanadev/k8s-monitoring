@@ -3,7 +3,7 @@
 #
 # Namespace  : sonarqube  | Release: sonarqube
 # Admin      : admin / Workshop_1_sonar
-# UI         : http://sonarqube.k3d.localhost
+# UI         : http://sonarqube.monitoramento.local
 # Metricas   : PodMonitor (via values.yaml)
 # Idempotente: re-executar e seguro.
 set -euo pipefail
@@ -42,11 +42,11 @@ echo -e "${GREEN}============================================${NC}"
 echo "  Namespace      : sonarqube"
 echo "  Admin          : admin"
 echo "  Senha          : Workshop_1_sonar"
-echo "  UI             : http://sonarqube.k3d.localhost"
+echo "  UI             : http://sonarqube.monitoramento.local"
 echo "  Monitoring code: sonarWorkshop123"
 echo ""
 echo -e "  ${YELLOW}Adicionar ao hosts (se necessario):${NC}"
-echo "    127.0.0.1  sonarqube.k3d.localhost"
+echo "    127.0.0.1  sonarqube.monitoramento.local"
 echo ""
 echo -e "  ${YELLOW}Aguardar pronto:${NC}"
 echo "    kubectl -n sonarqube get pods -w"

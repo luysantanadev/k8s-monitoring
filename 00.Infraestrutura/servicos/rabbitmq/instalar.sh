@@ -4,7 +4,7 @@
 # Namespace  : rabbitmq  | Release: rabbitmq
 # Usuario    : user      | Senha: Workshop123rabbit
 # AMQP TCP   : localhost:5672  (entrypoint 'amqp' no Traefik)
-# UI         : http://rabbitmq.k3d.localhost
+# UI         : http://rabbitmq.monitoramento.local
 # Metricas   : ServiceMonitor porta 9419 (via values.yaml)
 # Idempotente: re-executar e seguro.
 set -euo pipefail
@@ -57,10 +57,10 @@ echo "  Namespace  : rabbitmq"
 echo "  Usuario    : user"
 echo "  Senha      : Workshop123rabbit"
 echo "  AMQP       : amqp://user:Workshop123rabbit@localhost:5672"
-echo "  UI         : http://rabbitmq.k3d.localhost"
+echo "  UI         : http://rabbitmq.monitoramento.local"
 echo ""
 echo -e "  ${YELLOW}Adicionar ao hosts (se necessario):${NC}"
-echo "    127.0.0.1  rabbitmq.k3d.localhost"
+echo "    127.0.0.1  rabbitmq.monitoramento.local"
 echo ""
 echo -e "  ${YELLOW}Aguardar pronto:${NC}"
 echo "    kubectl -n rabbitmq get pods -w"

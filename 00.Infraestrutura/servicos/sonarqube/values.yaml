@@ -13,7 +13,7 @@ ingress:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web
   hosts:
-    - name: sonarqube.k3d.localhost
+    - name: sonarqube.monitoramento.local
       path: /
 
 prometheusMonitoring:

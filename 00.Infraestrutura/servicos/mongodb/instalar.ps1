@@ -19,29 +19,73 @@ function Write-Warn($msg)    { Write-Host "    AVISO: $msg" -ForegroundColor Yel
 function Write-Fail($msg)    { Write-Host "`n    ERRO: $msg" -ForegroundColor Red; exit 1 }
 
 # ---------------------------------------------------------------------------
-# 1. MongoDB Community Operator
-# ---------------------------------------------------------------------------
-Write-Step "Instalando MongoDB Community Operator..."
-helm repo add mongodb https://mongodb.github.io/helm-charts --force-update 2>&1 | Out-Null
-helm repo update mongodb 2>&1 | Out-Null
-helm upgrade --install community-operator mongodb/community-operator `
-    --namespace mongodb-operator --create-namespace `
-    --set operator.watchNamespace="*" `
-    --wait --timeout 120s
-if ($LASTEXITCODE -ne 0) { Write-Fail "Falha ao instalar MongoDB Community Operator." }
-Write-Success "Operator pronto."
-
-# ---------------------------------------------------------------------------
-# 2. Namespace + manifests (Secrets + MongoDBCommunity)
+# 1. Namespace (precisa existir antes do operator para watchNamespace)
 # ---------------------------------------------------------------------------
 Write-Step "Criando namespace 'mongodb'..."
 kubectl create namespace mongodb --dry-run=client -o yaml | kubectl apply -f - | Out-Null
 Write-Success "Namespace pronto."
 
+# ---------------------------------------------------------------------------
+# 2. Limpeza de release anterior em namespace diferente
+#    O CRD carrega anotacao do namespace antigo; helm nao consegue importar
+# ---------------------------------------------------------------------------
+Write-Step "Verificando instalacao anterior do operator..."
+$oldRelease = helm list -n mongodb-operator -q 2>$null | Where-Object { $_ -eq 'community-operator' }
+if ($oldRelease) {
+    Write-Warn "Release encontrado em mongodb-operator — removendo antes de reinstalar..."
+    helm uninstall community-operator -n mongodb-operator 2>&1 | Out-Null
+    # Reanotar CRDs para que o novo helm release possa assumir ownership
+    $crds = @(
+        'mongodbcommunity.mongodbcommunity.mongodb.com',
+        'mongodbusers.mongodbcommunity.mongodb.com'
+    )
+    foreach ($crd in $crds) {
+        kubectl annotate crd $crd `
+            'meta.helm.sh/release-name=community-operator' `
+            'meta.helm.sh/release-namespace=mongodb' `
+            --overwrite 2>$null | Out-Null
+        kubectl label crd $crd 'app.kubernetes.io/managed-by=Helm' --overwrite 2>$null | Out-Null
+    }
+    Write-Success "Release antigo removido e CRDs reannotados."
+} else {
+    Write-Success "Nenhum release antigo encontrado."
+}
+
+# ---------------------------------------------------------------------------
+# 3. MongoDB Community Operator (instalado no mesmo namespace do banco)
+#    operator.watchNamespace=mongodb evita problemas de RBAC cross-namespace
+# ---------------------------------------------------------------------------
+Write-Step "Instalando MongoDB Community Operator..."
+helm repo add mongodb https://mongodb.github.io/helm-charts --force-update 2>&1 | Out-Null
+helm repo update mongodb 2>&1 | Out-Null
+helm upgrade --install community-operator mongodb/community-operator `
+    --namespace mongodb `
+    --set operator.watchNamespace='mongodb' `
+    --wait --timeout 120s
+if ($LASTEXITCODE -ne 0) { Write-Fail "Falha ao instalar MongoDB Community Operator." }
+Write-Success "Operator pronto."
+
 Write-Step "Aplicando Secrets e MongoDBCommunity..."
 kubectl apply -f "$scriptDir/manifest.yaml"
 if ($LASTEXITCODE -ne 0) { Write-Fail "Falha ao aplicar manifest.yaml." }
 Write-Success "Secrets e MongoDBCommunity aplicados."
+
+# Aguarda StatefulSet ser criado pelo operator (pode levar 1-2 min)
+Write-Step "Aguardando StatefulSet mongodb ser criado pelo operator..."
+$timeout = 180
+$elapsed = 0
+do {
+    Start-Sleep 5
+    $elapsed += 5
+    $phase = kubectl -n mongodb get mongodbcommunity mongodb -o jsonpath='{.status.phase}' 2>$null
+    Write-Host "    phase: $phase (${elapsed}s)" -ForegroundColor DarkGray
+} while ($phase -ne 'Running' -and $elapsed -lt $timeout)
+
+if ($phase -ne 'Running') {
+    Write-Warn "MongoDB ainda nao ficou Running. Verifique: kubectl -n mongodb describe mongodbcommunity mongodb"
+} else {
+    Write-Success "MongoDB cluster Running."
+}
 
 # ---------------------------------------------------------------------------
 # 3. IngressRouteTCP — expoe localhost:27017
