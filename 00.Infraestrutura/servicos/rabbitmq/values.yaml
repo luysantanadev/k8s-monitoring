@@ -1,0 +1,33 @@
+auth:
+  username: user
+  password: "Workshop123rabbit"
+  erlangCookie: "erlangWorkshopCookie01234567"
+
+replicaCount: 1
+
+ingress:
+  enabled: true
+  hostname: rabbitmq.k3d.localhost
+  ingressClassName: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+  path: /
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    labels:
+      release: kube-prometheus-stack
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+persistence:
+  enabled: true
+  size: 1Gi

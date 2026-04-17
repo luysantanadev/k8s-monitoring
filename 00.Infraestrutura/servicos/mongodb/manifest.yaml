@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-password
+  namespace: mongodb
+type: Opaque
+stringData:
+  password: "Workshop123mongo"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-metrics-password
+  namespace: mongodb
+type: Opaque
+stringData:
+  password: "Workshop123mongometrics"
+---
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: mongodb
+  namespace: mongodb
+spec:
+  members: 1
+  type: ReplicaSet
+  version: "7.0.14"
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  users:
+    - name: workshop
+      db: admin
+      passwordSecretRef:
+        name: mongodb-password
+      roles:
+        - name: readWriteAnyDatabase
+          db: admin
+        - name: dbAdminAnyDatabase
+          db: admin
+      scramCredentialsSecretName: workshop-scram
+  prometheus:
+    passwordSecretRef:
+      name: mongodb-metrics-password
+  statefulSet:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: mongod
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi

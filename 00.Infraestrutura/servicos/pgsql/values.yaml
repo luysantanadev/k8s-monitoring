@@ -1,0 +1,12 @@
+cluster:
+  instances: 1
+  storage:
+    size: 1Gi
+  initdb:
+    database: workshop
+    owner: workshop
+    secret:
+      name: pgsql-credentials
+  postgresql:
+    parameters:
+      max_connections: "200"

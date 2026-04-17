@@ -1,0 +1,20 @@
+nodesCount: 1
+
+ravendb:
+  # Obtenha uma licenca gratuita para desenvolvedor em: https://ravendb.net/buy
+  # Deixe vazio para modo comunitario sem licenca (funcional para workshop).
+  license: ""
+  settings:
+    "Security.UnsecuredAccessAllowed": "PublicNetwork"
+    "Setup.Mode": "None"
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+storage:
+  size: 2Gi

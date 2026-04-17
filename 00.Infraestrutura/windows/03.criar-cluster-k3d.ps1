@@ -91,6 +91,7 @@ k3d cluster create monitoramento `
     --port "5432:5432@loadbalancer" `
     --port "6379:6379@loadbalancer" `
     --port "27017:27017@loadbalancer" `
+    --port "5672:5672@loadbalancer" `
     --agents 2 `
     --k3s-arg "--disable=traefik@server:0" `
     --k3s-arg "--kubelet-arg=system-reserved=cpu=100m,memory=${sysReservedMem}@server:0" `
@@ -175,6 +176,10 @@ helm upgrade --install traefik traefik/traefik `
     --set "ports.mongodb.hostPort=27017" `
     --set "ports.mongodb.expose.default=true" `
     --set "ports.mongodb.exposedPort=27017" `
+    --set "ports.amqp.port=5672" `
+    --set "ports.amqp.hostPort=5672" `
+    --set "ports.amqp.expose.default=true" `
+    --set "ports.amqp.exposedPort=5672" `
     --wait `
     --timeout 120s
 
@@ -209,6 +214,7 @@ Write-Host "              otlp-http         (porta 4318)"
 Write-Host "              postgres          (porta 5432)"
 Write-Host "              redis             (porta 6379)"
 Write-Host "              mongodb           (porta 27017)"
+Write-Host "              amqp              (porta 5672)"
 Write-Host ""
 Write-Host "Reservas por node (kubelet):"
 Write-Host "  system-reserved : cpu=100m, memory=$sysReservedMem"

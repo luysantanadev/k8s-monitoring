@@ -73,6 +73,7 @@ k3d cluster create monitoramento \
     --port "5432:5432@loadbalancer"     \
     --port "6379:6379@loadbalancer"     \
     --port "27017:27017@loadbalancer"   \
+    --port "5672:5672@loadbalancer"     \
     --agents 2                          \
     --k3s-arg "--disable=traefik@server:0" \
     --k3s-arg "--kubelet-arg=system-reserved=cpu=100m,memory=${sys_reserved_mem}@agent:*" \
@@ -113,7 +114,7 @@ write_success "Todos os nodes prontos."
 # ---------------------------------------------------------------------------
 # 6. Instalar Traefik via Helm
 #    Entrypoints TCP adicionais necessários para IngressRouteTCP dos bancos:
-#      otlpgrpc (4317), otlphttp (4318), postgres (5432), redis (6379), mongodb (27017)
+#    otlpgrpc (4317), otlphttp (4318), postgres (5432), redis (6379), mongodb (27017), amqp (5672)
 # ---------------------------------------------------------------------------
 write_step "Adicionando repositório do Traefik..."
 
@@ -152,6 +153,10 @@ helm upgrade --install traefik traefik/traefik \
     --set "ports.mongodb.hostPort=27017" \
     --set "ports.mongodb.expose.default=true" \
     --set "ports.mongodb.exposedPort=27017" \
+    --set "ports.amqp.port=5672" \
+    --set "ports.amqp.hostPort=5672" \
+    --set "ports.amqp.expose.default=true" \
+    --set "ports.amqp.exposedPort=5672" \
     --wait \
     --timeout 120s
 
@@ -185,6 +190,7 @@ echo "              otlp-http              (porta 4318)"
 echo "              postgres               (porta 5432)"
 echo "              redis                  (porta 6379)"
 echo "              mongodb                (porta 27017)"
+echo "              amqp                   (porta 5672)"
 echo ""
 echo "Reservas por node (kubelet):"
 echo "  system-reserved : cpu=100m, memory=${sys_reserved_mem}"

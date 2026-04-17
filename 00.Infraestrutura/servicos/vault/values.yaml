@@ -1,0 +1,30 @@
+server:
+  dev:
+    enabled: true
+    devRootToken: "root"
+  extraConfig: |
+    telemetry {
+      prometheus_retention_time = "30s"
+      disable_hostname           = true
+    }
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+injector:
+  enabled: true
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "100m"
+      memory: "128Mi"
+
+ui:
+  enabled: true
+  serviceType: ClusterIP

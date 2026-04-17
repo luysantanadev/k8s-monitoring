@@ -1,0 +1,42 @@
+community:
+  enabled: true
+
+setAdminPassword:
+  newPassword: "Workshop_1_sonar"
+  currentPassword: "admin"
+
+monitoringPasscode: "sonarWorkshop123"
+
+ingress:
+  enabled: true
+  ingressClassName: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+  hosts:
+    - name: sonarqube.k3d.localhost
+      path: /
+
+prometheusMonitoring:
+  podMonitor:
+    enabled: true
+    interval: 30s
+    labels:
+      release: kube-prometheus-stack
+
+resources:
+  requests:
+    cpu: "400m"
+    memory: "2048Mi"
+  limits:
+    cpu: "1000m"
+    memory: "2560Mi"
+
+persistence:
+  enabled: true
+  size: 2Gi
+
+initSysctl:
+  enabled: true
+
+elasticsearch:
+  bootstrapChecks: false
