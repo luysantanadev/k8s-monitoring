@@ -64,14 +64,14 @@ bash 00.Infraestrutura/linux/09.atualizar-hosts.sh
 
 ## Monitoring Stack
 
-| Component | Namespace | Acesso |
-|-----------|-----------|--------|
-| Grafana (kube-prometheus-stack) | `monitoring` | `grafana.monitoramento.local`, senha: `workshop123` |
-| Prometheus | `monitoring` | Interno |
-| Loki | `monitoring` | `loki.monitoramento.local` — datasource no Grafana |
-| Tempo | `monitoring` | `tempo.monitoramento.local` — OTLP gRPC `4317`, HTTP `4318` |
-| Pyroscope | `monitoring` | `pyroscope.monitoramento.local` — datasource no Grafana |
-| Alloy (OTel collector) | `monitoring` | `alloy.monitoring.svc.cluster.local:4318` |
+| Component                       | Namespace    | Acesso                                                      |
+| ------------------------------- | ------------ | ----------------------------------------------------------- |
+| Grafana (kube-prometheus-stack) | `monitoring` | `grafana.monitoramento.local`, senha: `workshop123`         |
+| Prometheus                      | `monitoring` | Interno                                                     |
+| Loki                            | `monitoring` | `loki.monitoramento.local` — datasource no Grafana          |
+| Tempo                           | `monitoring` | `tempo.monitoramento.local` — OTLP gRPC `4317`, HTTP `4318` |
+| Pyroscope                       | `monitoring` | `pyroscope.monitoramento.local` — datasource no Grafana     |
+| Alloy (OTel collector)          | `monitoring` | `alloy.monitoring.svc.cluster.local:4318`                   |
 
 **Observability flow**: App → OpenTelemetry SDK → Alloy → {Loki, Tempo, Pyroscope} ← Grafana
 
@@ -79,12 +79,12 @@ Helmvalues de cada componente em [`00.Infraestrutura/yamls/`](00.Infraestrutura/
 
 ## Bancos de Dados
 
-| Banco | Namespace | Porta Externa | Ingress |
-|-------|-----------|---------------|---------|
-| PostgreSQL (CloudNativePG) | `default` | `5432` (IngressRouteTCP) | — |
-| Redis (Bitnami) | `default` | `6379` (IngressRouteTCP) | — |
-| MongoDB Community | `default` | `27017` (IngressRouteTCP) | — |
-| RavenDB | `default` | — | `<nome>-ravendb.k3d.localhost` |
+| Banco                      | Namespace | Porta Externa             | Ingress                        |
+| -------------------------- | --------- | ------------------------- | ------------------------------ |
+| PostgreSQL (CloudNativePG) | `default` | `5432` (IngressRouteTCP)  | —                              |
+| Redis (Bitnami)            | `default` | `6379` (IngressRouteTCP)  | —                              |
+| MongoDB Community          | `default` | `27017` (IngressRouteTCP) | —                              |
+| RavenDB                    | `default` | —                         | `<nome>-ravendb.k3d.localhost` |
 
 Cada banco é instalado com `ServiceMonitor` (`release: kube-prometheus-stack`) para scrape automático pelo Prometheus.
 
@@ -97,6 +97,7 @@ Cada banco é instalado com `ServiceMonitor` (`release: kube-prometheus-stack`) 
 - Image: `monitoramento-registry.localhost:5001/nuxt-workshop:<tag>`
 
 Key values — see [`05.helm-chart/helm/values.yaml`](05.helm-chart/helm/values.yaml):
+
 - `configMap.data.OTEL_EXPORTER_OTLP_ENDPOINT` → aponta para Alloy
 - `ingress.hosts[0].host` → `nuxt-workshop.local` (adicionar ao `/etc/hosts` via script `09`)
 - `podAnnotations` incluem anotações de scrape do Pyroscope
@@ -106,10 +107,12 @@ Key values — see [`05.helm-chart/helm/values.yaml`](05.helm-chart/helm/values.
 ## Conventions
 
 ### Naming
+
 - Resources use the `monitoramento-` prefix: `monitoramento-registry`, `monitoramento-cluster`
 - Helm release names match chart names
 
 ### Labels (required on all resources)
+
 ```yaml
 labels:
   app: <service-name>
@@ -117,21 +120,24 @@ labels:
 ```
 
 ### Namespaces
-| Namespace | Workloads |
-|-----------|-----------|
-| `monitoring` | Prometheus, Grafana, Loki, Tempo, Pyroscope, Alloy |
-| `traefik` | Ingress controller |
-| `cnpg-system` | CloudNativePG operator |
-| `default` | Application workloads |
+
+| Namespace     | Workloads                                          |
+| ------------- | -------------------------------------------------- |
+| `monitoring`  | Prometheus, Grafana, Loki, Tempo, Pyroscope, Alloy |
+| `traefik`     | Ingress controller                                 |
+| `cnpg-system` | CloudNativePG operator                             |
+| `default`     | Application workloads                              |
 
 ### Resources (apply to every container)
+
 ```yaml
 resources:
   requests: { cpu: "100m", memory: "128Mi" }
-  limits:   { cpu: "500m", memory: "512Mi" }
+  limits: { cpu: "500m", memory: "512Mi" }
 ```
 
 ### Security Context (apply to all Pods)
+
 ```yaml
 podSecurityContext:
   runAsNonRoot: true
@@ -142,6 +148,7 @@ securityContext:
 ```
 
 ### Image Pull Policy
+
 - `Always` — development / any tag mutable
 - `IfNotPresent` — production / immutable tags
 
@@ -165,13 +172,15 @@ securityContext:
 
 ## Skills Disponíveis
 
-| Skill | Uso |
-|-------|-----|
-| `kubernetes-expert` | Manifests, Helm, ArgoCD |
-| `shell-scripting-expert` | Scripts Windows/Linux com paridade |
-| `devops-expert` | Ciclo DevOps completo, DORA metrics |
-| `github-actions-expert` | Workflows CI/CD seguros |
-| `terraform-expert` | IaC com HCP Terraform |
-| `adr-generator` | Registros de decisão arquitetural |
-| `context7-expert` | Docs atualizadas de libs/frameworks |
-| `devils-advocate` | Stress-test de ideias |
+| Skill                    | Uso                                                                                 |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| `kubernetes-expert`      | Manifests, Helm, ArgoCD                                                             |
+| `shell-scripting-expert` | Scripts Windows/Linux com paridade                                                  |
+| `devops-expert`          | Ciclo DevOps completo, DORA metrics                                                 |
+| `github-actions-expert`  | Workflows CI/CD seguros                                                             |
+| `terraform-expert`       | IaC com HCP Terraform                                                               |
+| `adr-generator`          | Registros de decisão arquitetural                                                   |
+| `context7-expert`        | Docs atualizadas de libs/frameworks                                                 |
+| `devils-advocate`        | Stress-test de ideias                                                               |
+| `progressive-commits`    | Commits pequenos e atômicos por etapa concluída com sucesso                         |
+| `session-handoff`        | Lê e grava o Memory Bank para continuar o projeto entre sessões sem perder contexto |

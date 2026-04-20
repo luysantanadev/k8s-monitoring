@@ -15,7 +15,7 @@ set -euo pipefail
 
 CLUSTER_NAME="monitoramento"
 NETWORK="k3d-${CLUSTER_NAME}"
-SERVERLB_CONTAINER="k3d-${CLUSTER_NAME}-serverlb"
+SERVER0_CONTAINER="k3d-${CLUSTER_NAME}-server-0"
 
 echo ""
 echo "==> Verificando cluster k3d '${CLUSTER_NAME}'..."
@@ -46,17 +46,18 @@ mkdir -p "${HOME}/.kube"
 k3d kubeconfig get "${CLUSTER_NAME}" > "${HOME}/.kube/config"
 chmod 600 "${HOME}/.kube/config"
 
-echo "==> Resolvendo IP interno do API server (${SERVERLB_CONTAINER})..."
-SERVERLB_IP=$(docker inspect "${SERVERLB_CONTAINER}" \
+echo "==> Resolvendo IP interno do API server (${SERVER0_CONTAINER})..."
+# O certificado TLS do k3s é assinado para o IP do server-0, não do serverlb.
+# Por isso usamos diretamente o IP do server-0 na porta 6443.
+SERVER0_IP=$(docker inspect "${SERVER0_CONTAINER}" \
     --format "{{(index .NetworkSettings.Networks \"${NETWORK}\").IPAddress}}" 2>/dev/null || echo "")
 
-if [ -n "${SERVERLB_IP}" ]; then
+if [ -n "${SERVER0_IP}" ]; then
     kubectl config set-cluster "k3d-${CLUSTER_NAME}" \
-        --server="https://${SERVERLB_IP}:6443"
-    echo "    API server: https://${SERVERLB_IP}:6443"
+        --server="https://${SERVER0_IP}:6443"
+    echo "    API server: https://${SERVER0_IP}:6443"
 else
-    # Fallback: skip TLS (útil para labs quando o IP não é resolvível)
-    echo "    ⚠️  IP do serverlb não encontrado. Ativando insecure-skip-tls-verify."
+    echo "    ⚠️  IP do server-0 não encontrado. Ativando insecure-skip-tls-verify."
     kubectl config set-cluster "k3d-${CLUSTER_NAME}" \
         --insecure-skip-tls-verify=true
 fi

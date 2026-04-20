@@ -2,42 +2,85 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
 {
 	"name": "k8s-monitoring",
-	"image": "mcr.microsoft.com/devcontainers/base:noble",
-	"features": {
-		// PowerShell para executar os scripts do projeto
-		"ghcr.io/devcontainers/features/powershell:2": {
-			"version": "lts"
-		},
-		// kubectl + helm (sem minikube — usamos k3d)
-		"ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
-			"version": "latest",
-			"helm": "latest",
-			"minikube": "none"
-		},
-		// Docker CLI apontando para o socket do host (Docker-outside-of-Docker).
-		// Necessário para conectar o container à rede k3d e executar k3d kubeconfig.
-		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
-			"version": "latest",
-			"installDockerBuildx": false
-		}
+	// Dockerfile próprio com todas as dependências pré-instaladas em camadas
+	// separadas — mais resiliente a falhas de rede que o mecanismo de features.
+	"build": {
+		"dockerfile": "Dockerfile"
 	},
+	// Docker socket do host montado para docker-outside-of-docker
+	"mounts": [
+		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+	],
 
-	// postCreateCommand:
-	//   1. Instala rtk (token-optimized CLI proxy)
-	//   2. Instala k3d (mesmo binário usado no host)
-	//   3. Tenta configurar o kubectl para o cluster 'monitoramento'.
-	//      Se o cluster ainda não existir, o script avisa e sai com sucesso.
-	//      Re-execute manualmente após criar o cluster:
-	//        bash .devcontainer/setup-kubeconfig.sh
-	"postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh && rtk init -g && curl -fsSL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash && bash .devcontainer/setup-kubeconfig.sh || true",
+	// postCreateCommand (executado uma vez após criar o container):
+	//   1. Instala rtk (CLI proxy que economiza tokens)
+	//   2. Instala k3d (mesmo binário do host, via script oficial)
+	//   3. Configura kubectl para o cluster 'monitoramento'.
+	//      Se o cluster não existir ainda, o script avisa e termina com sucesso.
+	//      Re-execute quando necessário: bash .devcontainer/setup-kubeconfig.sh
+	// postStartCommand: executado em CADA inicialização do container.
+	// Corrige o grupo do socket Docker para que o usuário 'vscode' (membro do
+	// grupo 'docker') possa acessá-lo sem sudo. O socket é recriado pelo daemon
+	// do host a cada boot com grupo 'root', então esse fix precisa rodar sempre.
+	"postStartCommand": "sudo chgrp docker /var/run/docker.sock",
+
+	// postCreateCommand: executado UMA VEZ após criar o container.
+	"postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh && rtk init -g; curl -fsSL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash; bash .devcontainer/setup-kubeconfig.sh || true",
 
 	"customizations": {
 		"vscode": {
 			"extensions": [
+				// ── RTK ───────────────────────────────────────────────────────────
 				"PeterMEFrandsen.rtk-inspector",
-				// Kubernetes tools: visualização de recursos e integração com kubeconfig
-				"ms-kubernetes-tools.vscode-kubernetes-tools"
-			]
+
+				// ── .NET / C# ─────────────────────────────────────────────────────
+				"ms-dotnettools.csdevkit",          // C# Dev Kit (inclui o C# base)
+				"ms-dotnettools.vscode-dotnet-runtime",
+
+				// ── Node.js / JavaScript / TypeScript ─────────────────────────────
+				"dbaeumer.vscode-eslint",
+				"esbenp.prettier-vscode",
+
+				// ── Python ────────────────────────────────────────────────────────
+				"ms-python.python",                 // IntelliSense, debug, test runner
+				"ms-python.vscode-pylance",         // type checking avançado
+				"ms-python.black-formatter",        // formatação automática
+
+				// ── Kubernetes / Docker ───────────────────────────────────────────
+				"ms-kubernetes-tools.vscode-kubernetes-tools",
+				"ms-azuretools.vscode-docker",
+
+				// ── YAML / geral ──────────────────────────────────────────────────
+				"redhat.vscode-yaml",               // autocomplete para Helm/K8s YAMLs
+				"editorconfig.editorconfig"
+			],
+			"settings": {
+				// ── Formatadores padrão por linguagem ─────────────────────────────
+				"[csharp]": {
+					"editor.defaultFormatter": "ms-dotnettools.csdevkit"
+				},
+				"[javascript]": {
+					"editor.defaultFormatter": "esbenp.prettier-vscode"
+				},
+				"[typescript]": {
+					"editor.defaultFormatter": "esbenp.prettier-vscode"
+				},
+				"[python]": {
+					"editor.defaultFormatter": "ms-python.black-formatter"
+				},
+				"[yaml]": {
+					"editor.defaultFormatter": "redhat.vscode-yaml"
+				},
+				// ── Editor ────────────────────────────────────────────────────────
+				"editor.formatOnSave": true,
+				"editor.rulers": [120],
+				// ── Python ────────────────────────────────────────────────────────
+				"python.defaultInterpreterPath": "/usr/bin/python3",
+				// ── Kubernetes ────────────────────────────────────────────────────
+				"vs-kubernetes": {
+					"vs-kubernetes.knownKubecontexts": ["k3d-monitoramento"]
+				}
+			}
 		}
 	}
 }

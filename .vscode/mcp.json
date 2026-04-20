@@ -4,7 +4,16 @@
 			"command": "npx",
 			"args": [
 				"-y",
-				"kubernetes-mcp-server@latest"
+				"kubernetes-mcp-server@latest",
+				// Restringe ao cluster local — sem acesso a outros contextos no kubeconfig
+				"--disable-multi-cluster",
+				// Habilita apenas os toolsets necessários para o laboratório:
+				// core   → pods, resources, events, logs, exec
+				// config → kubeconfig view/manage
+				// helm   → instalar/listar/remover releases
+				"--toolsets", "core,config,helm",
+				// Nível de log 1 (warnings + errors) — evita spam de debug
+				"--log-level", "1"
 			],
 			"type": "stdio"
 		}
