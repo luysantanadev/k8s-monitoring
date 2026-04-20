@@ -15,24 +15,98 @@ ok()   { echo -e "    ${GREEN}OK: $1${NC}"; }
 warn() { echo -e "    ${YELLOW}AVISO: $1${NC}"; }
 fail() { echo -e "\n    ${RED}ERRO: $1${NC}"; exit 1; }
 
-# 1. Helm repo
-step "Adicionando repositorio RavenDB..."
-helm repo add ravendb https://ravendb.github.io/helm-charts --force-update 2>/dev/null || true
-helm repo update ravendb 2>/dev/null
-ok "Repositorio pronto."
-
-# 2. Namespace
+# 1. Namespace
 step "Criando namespace 'ravendb'..."
 kubectl create namespace ravendb --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 ok "Namespace pronto."
 
-# 3. RavenDB
-step "Instalando RavenDB 'ravendb'..."
-helm upgrade --install ravendb ravendb/ravendb-cluster \
-    --namespace ravendb \
-    --values "$SCRIPT_DIR/values.yaml" \
-    --wait --timeout 180s \
-    || fail "Helm install falhou."
+# 2. RavenDB — StatefulSet + Service (modo nao-seguro/workshop)
+# O chart oficial ravendb/ravendb-cluster exige setup package TLS + licenca,
+# incompativel com Setup.Mode=None. Usamos manifest direto com a imagem oficial.
+step "Implantando RavenDB (StatefulSet + Service)..."
+kubectl apply -f - <<'EOF'
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ravendb
+  namespace: ravendb
+  labels:
+    app: ravendb
+spec:
+  serviceName: ravendb
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ravendb
+  template:
+    metadata:
+      labels:
+        app: ravendb
+        app.kubernetes.io/instance: ravendb
+    spec:
+      securityContext:
+        runAsNonRoot: false
+      containers:
+        - name: ravendb
+          image: ravendb/ravendb:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: RAVEN_Security_UnsecuredAccessAllowed
+              value: "PublicNetwork"
+            - name: RAVEN_Setup_Mode
+              value: "None"
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: tcp
+              containerPort: 38888
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/ravendb/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ravendb
+  namespace: ravendb
+  labels:
+    app: ravendb
+    app.kubernetes.io/instance: ravendb
+spec:
+  selector:
+    app: ravendb
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+    - name: tcp
+      port: 38888
+      targetPort: 38888
+EOF
+
+step "Aguardando RavenDB ficar pronto..."
+kubectl rollout status statefulset/ravendb -n ravendb --timeout=180s \
+    || fail "RavenDB nao ficou pronto a tempo."
 ok "RavenDB instalado."
 
 # 4. Ingress HTTP
@@ -55,7 +129,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: ravendb-ravendb-cluster
+                name: ravendb
                 port:
                   number: 8080
 EOF
@@ -75,6 +149,9 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/instance: ravendb
+  namespaceSelector:
+    matchNames:
+      - ravendb
   endpoints:
     - port: http
       interval: 30s

@@ -67,7 +67,7 @@ spec:
   routes:
     - match: HostSNI(``*``)
       services:
-        - name: pgsql-rw
+        - name: pgsql-cluster-rw
           port: 5432
 "@ | kubectl apply -f -
 if ($LASTEXITCODE -ne 0) { Write-Warn "IngressRouteTCP nao aplicado." }

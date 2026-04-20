@@ -57,7 +57,7 @@ spec:
   routes:
     - match: HostSNI(`*`)
       services:
-        - name: pgsql-rw
+        - name: pgsql-cluster-rw
           port: 5432
 EOF
 ok "PostgreSQL acessivel em localhost:5432."
