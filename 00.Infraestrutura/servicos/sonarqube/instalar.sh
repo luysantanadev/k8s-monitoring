@@ -31,7 +31,6 @@ step "Instalando SonarQube 'sonarqube' (pode levar 3-5 min)..."
 helm upgrade --install sonarqube sonarqube/sonarqube \
     --namespace sonarqube \
     --values "$SCRIPT_DIR/values.yaml" \
-    --wait --timeout 300s \
     || fail "Helm install falhou."
 ok "SonarQube instalado."
 

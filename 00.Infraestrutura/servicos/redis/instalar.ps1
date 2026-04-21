@@ -38,8 +38,7 @@ Write-Success "Namespace pronto."
 Write-Step "Instalando Redis 'redis'..."
 helm upgrade --install redis bitnami/redis `
     --namespace redis `
-    --values "$scriptDir/values.yaml" `
-    --wait --timeout 120s
+    --values "$scriptDir/values.yaml"
 if ($LASTEXITCODE -ne 0) { Write-Fail "Helm install falhou." }
 Write-Success "Redis instalado."
 

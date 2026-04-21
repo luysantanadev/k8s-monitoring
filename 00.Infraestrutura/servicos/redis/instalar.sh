@@ -31,7 +31,6 @@ step "Instalando Redis 'redis'..."
 helm upgrade --install redis bitnami/redis \
     --namespace redis \
     --values "$SCRIPT_DIR/values.yaml" \
-    --wait --timeout 120s \
     || fail "Helm install falhou."
 ok "Redis instalado."
 

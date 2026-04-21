@@ -21,7 +21,7 @@ step "Instalando CloudNativePG operator (namespace cnpg-system)..."
 helm repo add cnpg https://cloudnative-pg.github.io/charts --force-update 2>/dev/null || true
 helm repo update cnpg 2>/dev/null
 helm upgrade --install cnpg cnpg/cloudnative-pg \
-    --namespace cnpg-system --create-namespace --wait --timeout 120s \
+    --namespace cnpg-system --create-namespace \
     || fail "Falha ao instalar CNPG operator."
 ok "CNPG operator pronto."
 
@@ -39,7 +39,6 @@ step "Instalando cluster PostgreSQL 'pgsql'..."
 helm upgrade --install pgsql cnpg/cluster \
     --namespace pgsql \
     --values "$SCRIPT_DIR/values.yaml" \
-    --wait --timeout 180s \
     || fail "Helm install falhou."
 ok "Cluster PostgreSQL criado."
 

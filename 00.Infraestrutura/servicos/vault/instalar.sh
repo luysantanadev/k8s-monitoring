@@ -31,7 +31,6 @@ step "Instalando HashiCorp Vault 'vault'..."
 helm upgrade --install vault hashicorp/vault \
     --namespace vault \
     --values "$SCRIPT_DIR/values.yaml" \
-    --wait --timeout 120s \
     || fail "Helm install falhou."
 ok "Vault instalado."
 

@@ -110,11 +110,11 @@ spec:
       port: 38888
       targetPort: 38888
 "@ | kubectl apply -f -
-if (`$LASTEXITCODE -ne 0) { Write-Fail "StatefulSet/Service nao aplicado." }
+if ($LASTEXITCODE -ne 0) { Write-Fail "StatefulSet/Service nao aplicado." }
 
 Write-Step "Aguardando RavenDB ficar pronto..."
 kubectl rollout status statefulset/ravendb -n ravendb --timeout=180s
-if (`$LASTEXITCODE -ne 0) { Write-Fail "RavenDB nao ficou pronto a tempo." }
+if ($LASTEXITCODE -ne 0) { Write-Fail "RavenDB nao ficou pronto a tempo." }
 Write-Success "RavenDB instalado."
 
 # ---------------------------------------------------------------------------
@@ -143,7 +143,7 @@ spec:
                 port:
                   number: 8080
 "@ | kubectl apply -f -
-if (`$LASTEXITCODE -ne 0) { Write-Warn "Ingress nao aplicado." }
+if ($LASTEXITCODE -ne 0) { Write-Warn "Ingress nao aplicado." }
 else { Write-Success "RavenDB Studio em http://ravendb.monitoramento.local." }
 
 # ---------------------------------------------------------------------------
@@ -170,7 +170,7 @@ spec:
       interval: 30s
       path: /metrics
 "@ | kubectl apply -f -
-if (`$LASTEXITCODE -ne 0) { Write-Warn "ServiceMonitor nao aplicado." }
+if ($LASTEXITCODE -ne 0) { Write-Warn "ServiceMonitor nao aplicado." }
 else { Write-Success "ServiceMonitor criado." }
 
 # ---------------------------------------------------------------------------

@@ -61,7 +61,6 @@ helm repo update mongodb 2>/dev/null
 helm upgrade --install community-operator mongodb/community-operator \
     --namespace mongodb \
     --set 'operator.watchNamespace=mongodb' \
-    --wait --timeout 120s \
     || fail "Falha ao instalar MongoDB Community Operator."
 ok "Operator pronto."
 

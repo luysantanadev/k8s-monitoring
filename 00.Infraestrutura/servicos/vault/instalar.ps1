@@ -38,8 +38,7 @@ Write-Success "Namespace pronto."
 Write-Step "Instalando HashiCorp Vault 'vault'..."
 helm upgrade --install vault hashicorp/vault `
     --namespace vault `
-    --values "$scriptDir/values.yaml" `
-    --wait --timeout 120s
+    --values "$scriptDir/values.yaml"
 if ($LASTEXITCODE -ne 0) { Write-Fail "Helm install falhou." }
 Write-Success "Vault instalado."
 

@@ -76,8 +76,7 @@ helm repo add mongodb https://mongodb.github.io/helm-charts --force-update 2>&1 
 helm repo update mongodb 2>&1 | Out-Null
 helm upgrade --install community-operator mongodb/community-operator `
     --namespace mongodb `
-    --set operator.watchNamespace='mongodb' `
-    --wait --timeout 120s
+    --set operator.watchNamespace='mongodb'
 if ($LASTEXITCODE -ne 0) { Write-Fail "Falha ao instalar MongoDB Community Operator." }
 Write-Success "Operator pronto."
 

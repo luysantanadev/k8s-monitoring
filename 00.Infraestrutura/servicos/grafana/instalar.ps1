@@ -16,7 +16,7 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$YamlsDir = Join-Path $PSScriptRoot '..\yamls'
+$YamlsDir = Join-Path $PSScriptRoot 'yamls'
 
 # ── 1. Namespace ──────────────────────────────────────────────────────────────
 Write-Host "`n[1/7] Criando namespace monitoring..." -ForegroundColor Cyan

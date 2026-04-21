@@ -26,7 +26,6 @@ step "Instalando RabbitMQ 'rabbitmq'..."
 helm upgrade --install rabbitmq oci://registry-1.docker.io/bitnamicharts/rabbitmq \
     --namespace rabbitmq \
     --values "$SCRIPT_DIR/values.yaml" \
-    --wait --timeout 180s \
     || fail "Helm install falhou."
 ok "RabbitMQ instalado."
 
