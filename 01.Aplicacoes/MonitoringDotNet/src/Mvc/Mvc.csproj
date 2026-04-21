@@ -48,6 +48,9 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.StackExchangeRedis" Version="1.15.0-beta.1">
       <NoWarn>NU1701</NoWarn>
     </PackageReference>
+    <!-- Pyroscope: profiling continuo -> Grafana Pyroscope -->
+    <PackageReference Include="Pyroscope.OpenTelemetry" Version="0.2.0" />
+    <PackageReference Include="Pyroscope" Version="0.8.14" />
   </ItemGroup>
 
 </Project>

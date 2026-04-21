@@ -1,4 +1,4 @@
-# 05.05-alloy.yaml
+﻿# 05.05-alloy.yaml
 
 alloy:
   configMap:
@@ -48,7 +48,26 @@ alloy:
         grpc { endpoint = "0.0.0.0:4317" }
         http { endpoint = "0.0.0.0:4318" }
         output {
-          traces = [otelcol.exporter.otlp.tempo.input]
+          traces  = [otelcol.exporter.otlp.tempo.input]
+          metrics = [otelcol.processor.batch.metrics.input]
+        }
+      }
+
+      otelcol.processor.batch "metrics" {
+        timeout = "10s"
+        output {
+          metrics = [otelcol.exporter.prometheus.default.input]
+        }
+      }
+
+      otelcol.exporter.prometheus "default" {
+        forward_to = [prometheus.remote_write.mimir.receiver]
+      }
+
+      prometheus.remote_write "mimir" {
+        endpoint {
+          // kube-prometheus-stack expõe o Prometheus na porta 9090
+          url = "http://kube-prometheus-stack-prometheus:9090/api/v1/write"
         }
       }
 

@@ -1,4 +1,4 @@
-# Desabilita o que não precisamos agora
+﻿# Desabilita o que não precisamos agora
 alertmanager:
   enabled: false
 
@@ -6,6 +6,8 @@ alertmanager:
 prometheus:
   prometheusSpec:
     retention: 6h          # não acumula dados, é workshop
+    # Habilita endpoint /api/v1/write para receber métricas via OTLP do Alloy
+    enableRemoteWriteReceiver: true
     resources:
       requests:
         cpu: 200m
@@ -20,6 +22,21 @@ prometheus:
           resources:
             requests:
               storage: 2Gi
+    # Raspa /metrics da aplicação quando deployada no cluster (complementar ao OTLP push)
+    additionalScrapeConfigs:
+      - job_name: monitoring-dotnet-mvc
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: [apps]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            regex: monitoring-dotnet-mvc
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_ip]
+            target_label: __address__
+            replacement: "$1:8080"
+        metrics_path: /metrics
 
 # Grafana — já configurado com datasources via sidecar
 grafana:

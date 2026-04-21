@@ -25,6 +25,18 @@ tempo:
       wal:
         path: /var/tempo/wal
 
+  # Habilita o metrics-generator para gerar span metrics e service graphs.
+  # Necessario para Drilldown > Traces no Grafana (evita "empty ring" error).
+  metricsGenerator:
+    enabled: true
+    remoteWriteUrl: "http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write"
+
+  traces:
+    spanMetrics:
+      enabled: true
+    serviceGraphs:
+      enabled: true
+
   resources:
     requests:
       cpu: 100m

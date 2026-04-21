@@ -1,4 +1,4 @@
-
+﻿
 using DotNetEnv;
 using Mvc.Extensions;
 
@@ -49,6 +49,6 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-await app.MigrateDatabaseAsync();
+//await app.MigrateDatabaseAsync();
 
-app.Run();
+await app.RunAsync();

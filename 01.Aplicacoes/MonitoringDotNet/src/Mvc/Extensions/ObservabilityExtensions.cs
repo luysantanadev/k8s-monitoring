@@ -1,6 +1,7 @@
-using OpenTelemetry.Metrics;
+﻿using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Pyroscope.OpenTelemetry;
 using Serilog;
 using Serilog.Formatting.Compact;
 using Serilog.Sinks.Grafana.Loki;
@@ -49,6 +50,17 @@ internal static class ObservabilityExtensions
             .AddTelemetrySdk()
             .AddEnvironmentVariableDetector();
 
+        // Pyroscope: profiling continuo enviado ao servidor via push.
+        // A configuração é feita por variáveis de ambiente antes do profiler iniciar.
+        // Em Development usa o ingress HTTP (pyroscope.monitoramento.local).
+        var pyroscopeAddress = config["Observability:Pyroscope:ServerAddress"];
+        if (!string.IsNullOrEmpty(pyroscopeAddress))
+        {
+            Environment.SetEnvironmentVariable("PYROSCOPE_APPLICATION_NAME",
+                config["Observability:Pyroscope:ApplicationName"] ?? serviceName);
+            Environment.SetEnvironmentVariable("PYROSCOPE_SERVER_ADDRESS", pyroscopeAddress);
+        }
+
         builder.Services
             .AddOpenTelemetry()
             .WithTracing(tracing => tracing
@@ -62,7 +74,9 @@ internal static class ObservabilityExtensions
                 // Traces de comandos Redis -> Tempo; IConnectionMultiplexer resolvido via IServiceProvider
                 .AddRedisInstrumentation(opts => opts.FlushInterval = TimeSpan.FromSeconds(1))
                 .AddSource(serviceName)
-                // Exports spans to Tempo via OTLP/gRPC
+                // Correlaciona spans com perfis do Pyroscope
+                .AddProcessor(new PyroscopeSpanProcessor())
+                // Exports spans to Alloy/Tempo via OTLP/gRPC
                 .AddOtlpExporter(opts => opts.Endpoint = new Uri(otlpEndpoint)))
             .WithMetrics(metrics => metrics
                 .SetResourceBuilder(resourceBuilder)
@@ -71,8 +85,14 @@ internal static class ObservabilityExtensions
                 .AddRuntimeInstrumentation()
                 // Métricas nativas do Npgsql: pool de conexões (db.client.connections.*)
                 .AddMeter("Npgsql")
-                // Exposes /metrics for Prometheus scraping
-                .AddPrometheusExporter());
+                // Exposes /metrics for Prometheus scraping (fallback / cluster)
+                .AddPrometheusExporter()
+                // Push de métricas via OTLP ao Alloy -> Prometheus (necessário em dev local
+                // onde não há Prometheus raspando diretamente o /metrics da aplicação)
+                .AddOtlpExporter(opts => opts.Endpoint = new Uri(otlpEndpoint)));
+
+        // Health checks: liveness e readiness
+        builder.Services.AddHealthChecks();
 
         return builder;
     }
