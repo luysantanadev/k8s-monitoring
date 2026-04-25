@@ -1,0 +1,82 @@
+# values.yaml — ArgoCD para o cluster local monitoramento (k3d + Traefik)
+#
+# Servidor em modo insecure: Traefik termina HTTP na porta 80 e encaminha
+# ao argocd-server sem necessidade de TLS interno. Adequado para dev local.
+#
+# Recursos calibrados para cluster k3d de 3 agents (uso compartilhado).
+
+# ── Comportamento do servidor ─────────────────────────────────────────────────
+configs:
+  params:
+    # Desabilita HTTPS interno — Traefik cuida da camada de rede externa
+    server.insecure: "true"
+
+# ── Componente: argocd-server ─────────────────────────────────────────────────
+server:
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+# ── Componente: argocd-repo-server ────────────────────────────────────────────
+repoServer:
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+
+# ── Componente: argocd-application-controller ────────────────────────────────
+controller:
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+# ── Componente: applicationset-controller ─────────────────────────────────────
+applicationSet:
+  resources:
+    requests:
+      cpu: "10m"
+      memory: "64Mi"
+    limits:
+      cpu: "250m"
+      memory: "256Mi"
+
+# ── Componente: notifications-controller ──────────────────────────────────────
+notifications:
+  resources:
+    requests:
+      cpu: "10m"
+      memory: "64Mi"
+    limits:
+      cpu: "250m"
+      memory: "256Mi"
+
+# ── Componente: dex (OIDC) ────────────────────────────────────────────────────
+dex:
+  resources:
+    requests:
+      cpu: "10m"
+      memory: "64Mi"
+    limits:
+      cpu: "250m"
+      memory: "128Mi"
+
+# ── Componente: redis (cache interno) ─────────────────────────────────────────
+redis:
+  resources:
+    requests:
+      cpu: "10m"
+      memory: "64Mi"
+    limits:
+      cpu: "250m"
+      memory: "128Mi"
