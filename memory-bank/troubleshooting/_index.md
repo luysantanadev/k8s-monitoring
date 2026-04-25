@@ -36,6 +36,7 @@ _(none)_
 | [INC002](INC002-mongodb-statefulset-orphan.md)                     | MongoDB              | StatefulSet `0/1` forever, `FailedCreate` loop        | manifest.yaml applied before operator install                                             | 2026-04-20 |
 | [INC003](INC003-pgsql-ingressroutetcp-wrong-service.md)            | PostgreSQL / Traefik | `SSL error` no DataGrip, timeout na app via localhost | IngressRouteTCP apontava para `pgsql-rw` (inexistente) em vez de `pgsql-cluster-rw`       | 2026-04-20 |
 | [INC004](INC004-ravendb-helm-chart-incompativel-modo-unsecured.md) | RavenDB / Helm       | `helm repo add` 404 + chart exige setup package TLS   | URL do repo errada (`/charts` faltando); chart oficial incompatível com `Setup.Mode=None` | 2026-04-20 |
+| [INC005](INC005-ravendb-binary-path-changed.md)                    | RavenDB / StatefulSet | Todos os pods em `CrashLoopBackOff` imediatamente    | `ravendb/ravendb:latest` moveu binário de `/opt/RavenDB/` para `/usr/lib/ravendb/`        | 2026-04-25 |
 
 ---
 
