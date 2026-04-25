@@ -105,6 +105,7 @@ labels:
 | ------------- | ---------------------------------------------------- |
 | `monitoring`  | kube-prometheus-stack, Loki, Tempo, Pyroscope, Alloy |
 | `traefik`     | Traefik ingress controller                           |
+| `argocd`      | ArgoCD GitOps controller                             |
 | `cnpg-system` | CloudNativePG operator                               |
 | `default`     | All data services + demo apps                        |
 
