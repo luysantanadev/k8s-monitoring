@@ -4,6 +4,7 @@
     Instala SonarQube Community no namespace 'sonarqube'.
 .NOTES
     Namespace  : sonarqube  | Release: sonarqube
+    DB         : sonarqube-postgresql (Postgres 17) | Senha: Workshop123sonar
     Admin      : admin / Workshop_1_sonar
     UI         : http://sonarqube.monitoramento.local  (adicionar ao /etc/hosts)
     Metricas   : PodMonitor (via values.yaml)
@@ -33,12 +34,24 @@ kubectl create namespace sonarqube --dry-run=client -o yaml | kubectl apply -f -
 Write-Success "Namespace pronto."
 
 # ---------------------------------------------------------------------------
-# 3. SonarQube
+# 3. PostgreSQL
+# ---------------------------------------------------------------------------
+Write-Step "Aplicando PostgreSQL para SonarQube (manifest.yaml)..."
+kubectl apply -f "$scriptDir/manifest.yaml"
+if ($LASTEXITCODE -ne 0) { Write-Fail "kubectl apply manifest.yaml falhou." }
+Write-Step "Aguardando PostgreSQL ficar pronto..."
+kubectl rollout status deployment/sonarqube-postgresql -n sonarqube --timeout=120s
+if ($LASTEXITCODE -ne 0) { Write-Fail "PostgreSQL nao iniciou a tempo." }
+Write-Success "PostgreSQL pronto."
+
+# ---------------------------------------------------------------------------
+# 4. SonarQube
 # ---------------------------------------------------------------------------
 Write-Step "Instalando SonarQube 'sonarqube' (pode levar 3-5 min)..."
 helm upgrade --install sonarqube sonarqube/sonarqube `
     --namespace sonarqube `
     --values "$scriptDir/values.yaml" `
+    --wait `
     --timeout 300s
 if ($LASTEXITCODE -ne 0) { Write-Fail "Helm install falhou." }
 Write-Success "SonarQube instalado."
@@ -51,6 +64,7 @@ Write-Host "============================================" -ForegroundColor Green
 Write-Host "  SonarQube pronto!" -ForegroundColor Green
 Write-Host "============================================" -ForegroundColor Green
 Write-Host "  Namespace      : sonarqube"
+Write-Host "  DB             : sonarqube-postgresql / Workshop123sonar"
 Write-Host "  Admin          : admin"
 Write-Host "  Senha          : Workshop_1_sonar"
 Write-Host "  UI             : http://sonarqube.monitoramento.local"

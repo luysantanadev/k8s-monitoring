@@ -40,3 +40,14 @@ initSysctl:
 
 elasticsearch:
   bootstrapChecks: false
+
+# Desabilita o PostgreSQL embutido do chart e aponta para o externo (manifest.yaml)
+postgresql:
+  enabled: false
+
+jdbcOverwrite:
+  enable: true
+  jdbcUrl: "jdbc:postgresql://sonarqube-postgresql:5432/sonarqube"
+  jdbcUsername: "sonarqube"
+  jdbcSecretName: "sonarqube-db-credentials"
+  jdbcSecretPasswordKey: "postgres-password"

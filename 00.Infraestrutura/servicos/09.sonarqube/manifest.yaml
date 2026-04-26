@@ -1,0 +1,101 @@
+---
+# Credenciais do PostgreSQL usado pelo SonarQube
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sonarqube-db-credentials
+  namespace: sonarqube
+type: Opaque
+stringData:
+  postgres-user: "sonarqube"
+  postgres-password: "Workshop123sonar"
+  postgres-db: "sonarqube"
+
+---
+# PVC para dados do PostgreSQL
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarqube-postgresql-pvc
+  namespace: sonarqube
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 2Gi
+
+---
+# PostgreSQL usando imagem oficial
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonarqube-postgresql
+  namespace: sonarqube
+  labels:
+    app: sonarqube-postgresql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sonarqube-postgresql
+  template:
+    metadata:
+      labels:
+        app: sonarqube-postgresql
+    spec:
+      containers:
+        - name: postgresql
+          image: postgres:17-alpine
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: sonarqube-db-credentials
+                  key: postgres-db
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: sonarqube-db-credentials
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sonarqube-db-credentials
+                  key: postgres-password
+            # Subpasta para evitar conflito com diretorio vazio na montagem
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "sonarqube", "-d", "sonarqube"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: sonarqube-postgresql-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonarqube-postgresql
+  namespace: sonarqube
+spec:
+  selector:
+    app: sonarqube-postgresql
+  ports:
+    - port: 5432
+      targetPort: 5432
