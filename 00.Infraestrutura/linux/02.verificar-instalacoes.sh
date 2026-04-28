@@ -12,7 +12,7 @@
 #   Execute em um novo terminal após rodar 01.install-dependencies.sh.
 # ==============================================================================
 
-set -uo pipefail
+set -euo pipefail
 
 # Cores ANSI
 CYAN='\033[0;36m'
@@ -40,20 +40,17 @@ write_check() {
   echo -e "  [${color}${status}${RESET}]  ${label}${suffix}"
 }
 
-# Argumentos de versão por ferramenta — cada uma tem sua própria convenção
-declare -A VERSION_ARGS=(
-  [docker]="--version"
-  [k3d]="--version"
-  [kubectl]="version --client"
-  [helm]="version --short"
-)
-
 echo ""
 echo -e "${CYAN}==> Ferramentas no PATH${RESET}"
 
 for cmd in docker k3d kubectl helm; do
   if command -v "$cmd" &>/dev/null; then
-    ver=$(eval "$cmd ${VERSION_ARGS[$cmd]}" 2>&1 | head -1)
+    case "$cmd" in
+      docker)  ver=$(docker  --version 2>&1 | head -1) ;;
+      k3d)     ver=$(k3d     --version 2>&1 | head -1) ;;
+      kubectl) ver=$(kubectl version --client 2>&1 | head -1) ;;
+      helm)    ver=$(helm    version --short 2>&1 | head -1) ;;
+    esac
     write_check "true" "$cmd" "$ver"
   else
     write_check "false" "$cmd"
@@ -73,7 +70,7 @@ fi
 
 echo ""
 if [[ "$ok" == "true" ]]; then
-  echo -e "  ${GREEN}Tudo pronto! Pode rodar: ./03.setup-k3d-multi-node.sh${RESET}"
+  echo -e "  ${GREEN}Tudo pronto! Pode rodar: ./03.criar-cluster-k3d.sh${RESET}"
 else
   echo -e "  ${RED}Corrija os itens acima antes de continuar.${RESET}"
   exit 1

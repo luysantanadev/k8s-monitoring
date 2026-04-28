@@ -1,22 +1,18 @@
-# k8s-monitoring — Agent Instructions
+# youtube-cloud-native-journey — Agent Instructions
 
-This project builds a full **Kubernetes observability platform** running on k3d (Kubernetes in Docker) with cross-platform support for **Windows (PowerShell)** and **Linux (Bash)**. The stack covers metrics, logs, traces and continuous profiling, deployed via Helm, with GitHub Actions as CI/CD. Content is produced for the YouTube channel [@luysantanadev](https://www.youtube.com/@luysantanadev).
+This project is a practical journey for building and operating **modern cloud-native applications on Kubernetes**, starting from a local k3d lab and evolving through security, performance, efficiency, DevOps, and CI/CD practices. Observability remains a core pillar (metrics, logs, traces, profiling), but it is part of a broader application platform strategy. Content is produced for the YouTube channel [@luysantanadev](https://www.youtube.com/@luysantanadev).
 
 ---
 
 ## Project Layout
 
 ```
-00.Infraestrutura/   # Setup automation (windows/ + linux/ + yamls/)
-01.docker-images/    # Static nginx image (workshop-nginx)
-02.docker-envs/      # Node.js client+server Docker example
-03.docker-compose/   # Local docker-compose reference env
-04.fundamentos-kubernetes/  # Educational raw manifests (01→05)
-05.helm-chart/       # Production app: nuxt-workshop (app/ + helm/)
-06.explorando/       # Scratch / exploration scripts
+00.Infraestrutura/        # Setup automation (windows/ + linux/ + servicos/)
+01.Aplicacoes/            # Application code and cloud-native experiments
+.github/memory-bank/      # Persistent project context, tasks, and troubleshooting history
 ```
 
-See [`00.Infraestrutura/yamls/`](00.Infraestrutura/yamls/) for every Helm values override used in the monitoring stack.
+See [`00.Infraestrutura/servicos/01.grafana/yamls/`](00.Infraestrutura/servicos/01.grafana/yamls/) for monitoring stack values and manifests.
 
 ---
 
@@ -24,18 +20,14 @@ See [`00.Infraestrutura/yamls/`](00.Infraestrutura/yamls/) for every Helm values
 
 Run scripts **in order**. Every script is idempotent — re-running is safe.
 
+### Base cluster bootstrap (required first)
+
 ### Windows
 
 ```powershell
 .\00.Infraestrutura\windows\01.instalar-dependencias.ps1         # winget: k3d, kubectl, helm
 .\00.Infraestrutura\windows\02.verificar-instalacoes.ps1         # sanity check
 .\00.Infraestrutura\windows\03.criar-cluster-k3d.ps1             # cluster + Traefik
-.\00.Infraestrutura\windows\04.configurar-monitoramento.ps1      # stack completo de observabilidade
-.\00.Infraestrutura\windows\05.configurar-cnpg-criar-base-pgsql.ps1  # PostgreSQL via CloudNativePG
-.\00.Infraestrutura\windows\06.configurar-redis.ps1              # Redis + ServiceMonitor
-.\00.Infraestrutura\windows\07.configurar-mongodb.ps1            # MongoDB Community + ServiceMonitor
-.\00.Infraestrutura\windows\08.configurar-ravendb.ps1            # RavenDB + Ingress
-.\00.Infraestrutura\windows\09.atualizar-hosts.ps1               # /etc/hosts automático
 ```
 
 ### Linux
@@ -45,12 +37,16 @@ bash 00.Infraestrutura/linux/01.instalar-dependencias.sh
 bash 00.Infraestrutura/linux/02.verificar-instalacoes.sh
 bash 00.Infraestrutura/linux/03.criar-cluster-k3d.sh
 bash 00.Infraestrutura/linux/04.configurar-monitoramento.sh
-bash 00.Infraestrutura/linux/05.configurar-cnpg-criar-base-pgsql.sh
-bash 00.Infraestrutura/linux/06.configurar-redis.sh
-bash 00.Infraestrutura/linux/07.configurar-mongodb.sh
-bash 00.Infraestrutura/linux/08.configurar-ravendb.sh
 bash 00.Infraestrutura/linux/09.atualizar-hosts.sh
 ```
+
+### Platform services (install as needed after bootstrap)
+
+Use service-specific scripts in `00.Infraestrutura/servicos/<NN.nome>/`:
+
+- `instalar.ps1` for Windows
+- `instalar.sh` for Linux
+- `values.yaml` or `manifest.yaml` for Helm/Kubernetes resources
 
 ### k3d Cluster Specs
 
@@ -62,7 +58,7 @@ bash 00.Infraestrutura/linux/09.atualizar-hosts.sh
 
 ---
 
-## Monitoring Stack
+## Platform and Observability Stack
 
 | Component                       | Namespace    | Acesso                                                      |
 | ------------------------------- | ------------ | ----------------------------------------------------------- |
@@ -75,7 +71,7 @@ bash 00.Infraestrutura/linux/09.atualizar-hosts.sh
 
 **Observability flow**: App → OpenTelemetry SDK → Alloy → {Loki, Tempo, Pyroscope} ← Grafana
 
-Helmvalues de cada componente em [`00.Infraestrutura/yamls/`](00.Infraestrutura/yamls/).
+Helm values/manifests de observabilidade em [`00.Infraestrutura/servicos/01.grafana/yamls/`](00.Infraestrutura/servicos/01.grafana/yamls/).
 
 ## Bancos de Dados
 
@@ -92,13 +88,13 @@ Cada banco é instalado com `ServiceMonitor` (`release: kube-prometheus-stack`) 
 
 | Serviço                  | Namespace   | Acesso                                    | Credenciais                                              | Script                                              |
 | ------------------------ | ----------- | ----------------------------------------- | -------------------------------------------------------- | --------------------------------------------------- |
-| RabbitMQ (Operator)      | `rabbitmq`  | `rabbitmq.monitoramento.local`            | `user` / `Workshop123rabbit`                             | `servicos/rabbitmq/instalar.ps1` (ou `.sh`)         |
-| HashiCorp Vault          | `vault`     | `vault.monitoramento.local`               | Root token em Secret `vault-unseal-keys` (namespace `vault`) | `servicos/10.vault/instalar.ps1` (ou `.sh`)     |
-| ArgoCD                   | `argocd`    | `argocd.monitoramento.local`              | `admin` / `kubectl -n argocd get secret argocd-initial-admin-secret` | `servicos/02.argocd/instalar.ps1` (ou `.sh`) |
-| SonarQube                | `default`   | `sonarqube.monitoramento.local`           | `admin` / `admin` (alterar no primeiro login)            | `servicos/sonarqube/instalar.ps1` (ou `.sh`)        |
-| Keycloak                 | `default`   | —                                         | —                                                        | `servicos/03.keycloak/instalar.ps1` (ou `.sh`)      |
+| RabbitMQ (Operator)      | `rabbitmq`  | `rabbitmq.monitoramento.local`            | `user` / `Workshop123rabbit`                             | `00.Infraestrutura/servicos/08.rabbitmq/instalar.ps1` (ou `.sh`) |
+| HashiCorp Vault          | `vault`     | `vault.monitoramento.local`               | Root token em Secret `vault-unseal-keys` (namespace `vault`) | `00.Infraestrutura/servicos/10.vault/instalar.ps1` (ou `.sh`) |
+| ArgoCD                   | `argocd`    | `argocd.monitoramento.local`              | `admin` / `kubectl -n argocd get secret argocd-initial-admin-secret` | `00.Infraestrutura/servicos/02.argocd/instalar.ps1` (ou `.sh`) |
+| SonarQube                | `default`   | `sonarqube.monitoramento.local`           | `admin` / `admin` (alterar no primeiro login)            | `00.Infraestrutura/servicos/09.sonarqube/instalar.ps1` (ou `.sh`) |
+| Keycloak                 | `default`   | —                                         | —                                                        | `00.Infraestrutura/servicos/03.keycloak/instalar.ps1` (ou `.sh`) |
 
-Cada serviço é instalado individualmente via seu script dedicado em `00.Infraestrutura/servicos/<nome>/`.
+Cada serviço é instalado individualmente via seu script dedicado em `00.Infraestrutura/servicos/<NN.nome>/`.
 
 ---
 
@@ -182,6 +178,7 @@ securityContext:
 - [Kubernetes & Helm conventions](.github/instructions/kubernetes-manifests.instructions.md)
 - [CI/CD & ArgoCD](.github/instructions/cicd-argocd.instructions.md)
 - [Troubleshooting Memory](.github/instructions/troubleshooting-memory.instructions.md)
+- [Memory Bank](.github/instructions/memory-bank.instructions.md)
 
 ## Skills Disponíveis
 

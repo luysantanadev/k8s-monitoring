@@ -70,6 +70,8 @@ STATIC_HOSTS=(
     "loki.monitoramento.local"
     "tempo.monitoramento.local"
     "pyroscope.monitoramento.local"
+    "argocd.monitoramento.local"
+    "alloy.monitoramento.local"
 )
 
 # ---------------------------------------------------------------------------

@@ -17,6 +17,8 @@ set -euo pipefail
 
 CYAN='\033[0;36m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; RESET='\033[0m'
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 write_step()    { echo -e "\n${CYAN}==> $1${RESET}"; }
 write_success() { echo -e "    ${GREEN}OK: $1${RESET}"; }
 write_warn()    { echo -e "    ${YELLOW}AVISO: $1${RESET}"; }
@@ -50,15 +52,21 @@ if k3d cluster list 2>/dev/null | grep -q "^monitoramento"; then
 fi
 
 # ---------------------------------------------------------------------------
-# 2. Detectar memória disponível para reservas do kubelet
+# 2. Detectar hardware e memória disponível para reservas do kubelet
 # ---------------------------------------------------------------------------
 total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 total_gb=$(( total_kb / 1024 / 1024 ))
+total_cpus=$(nproc)
 
-if   (( total_gb >= 16 )); then sys_reserved_mem="512Mi"
-elif (( total_gb >=  8 )); then sys_reserved_mem="256Mi"
-else                            sys_reserved_mem="128Mi"
+if   (( total_gb >= 24 )); then sys_reserved_mem="1024Mi"
+elif (( total_gb >= 12 )); then sys_reserved_mem="512Mi"
+else                            sys_reserved_mem="256Mi"
 fi
+
+write_step "Hardware detectado"
+echo "  CPUs detectadas : ${total_cpus}"
+echo "  RAM total       : ~${total_gb} GB"
+echo "  system-reserved : ${sys_reserved_mem}"
 
 # ---------------------------------------------------------------------------
 # 3. Criar cluster
@@ -74,8 +82,11 @@ k3d cluster create monitoramento \
     --port "6379:6379@loadbalancer"     \
     --port "27017:27017@loadbalancer"   \
     --port "5672:5672@loadbalancer"     \
-    --agents 2                          \
+    --agents 3                          \
     --k3s-arg "--disable=traefik@server:0" \
+    --k3s-arg "--kubelet-arg=system-reserved=cpu=100m,memory=${sys_reserved_mem}@server:0" \
+    --k3s-arg "--kubelet-arg=kube-reserved=cpu=100m,memory=128Mi@server:0"              \
+    --k3s-arg "--kubelet-arg=eviction-hard=memory.available<300Mi@server:0"             \
     --k3s-arg "--kubelet-arg=system-reserved=cpu=100m,memory=${sys_reserved_mem}@agent:*" \
     --k3s-arg "--kubelet-arg=kube-reserved=cpu=100m,memory=128Mi@agent:*"              \
     --k3s-arg "--kubelet-arg=eviction-hard=memory.available<300Mi@agent:*"             \
@@ -92,7 +103,7 @@ write_success "Cluster criado."
 write_step "Corrigindo endpoint do kubeconfig..."
 
 current_server=$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')
-api_port=$(echo "$current_server" | grep -oP ':\K\d+$') || \
+api_port=$(echo "$current_server" | sed 's/.*://') || \
     write_fail "Não foi possível extrair a porta do API server. Server: $current_server"
 
 new_server="https://127.0.0.1:${api_port}"
@@ -202,8 +213,8 @@ echo "  Push do host    : localhost:5001"
 echo "  Dentro dos pods : monitoramento-registry.localhost:5001"
 echo ""
 echo "Próximos passos:"
-echo "  bash 04.configurar-monitoramento.sh"
+echo "  bash 00.Infraestrutura/servicos/grafana/instalar.sh"
 echo ""
 echo "Para resetar o cluster a qualquer momento:"
-echo "  bash 03.setup-k3d-multi-node.sh"
+echo "  bash 03.criar-cluster-k3d.sh"
 echo ""
