@@ -25,7 +25,8 @@ Write-Step "Instalando CloudNativePG operator (namespace cnpg-system)..."
 helm repo add cnpg https://cloudnative-pg.github.io/charts --force-update 2>&1 | Out-Null
 helm repo update cnpg 2>&1 | Out-Null
 helm upgrade --install cnpg cnpg/cloudnative-pg `
-    --namespace cnpg-system --create-namespace
+    --namespace cnpg-system --create-namespace `
+    --wait --timeout 3m
 if ($LASTEXITCODE -ne 0) { Write-Fail "Falha ao instalar CNPG operator." }
 Write-Success "CNPG operator pronto."
 

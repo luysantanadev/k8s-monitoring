@@ -22,6 +22,7 @@ helm repo add cnpg https://cloudnative-pg.github.io/charts --force-update 2>/dev
 helm repo update cnpg 2>/dev/null
 helm upgrade --install cnpg cnpg/cloudnative-pg \
     --namespace cnpg-system --create-namespace \
+    --wait --timeout 3m \
     || fail "Falha ao instalar CNPG operator."
 ok "CNPG operator pronto."
 

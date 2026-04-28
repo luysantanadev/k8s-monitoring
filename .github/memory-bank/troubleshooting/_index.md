@@ -38,11 +38,12 @@ _(none)_
 | [INC004](INC004-ravendb-helm-chart-incompativel-modo-unsecured.md) | RavenDB / Helm       | `helm repo add` 404 + chart exige setup package TLS   | URL do repo errada (`/charts` faltando); chart oficial incompatível com `Setup.Mode=None` | 2026-04-20 |
 | [INC005](INC005-ravendb-binary-path-changed.md)                    | RavenDB / StatefulSet | Todos os pods em `CrashLoopBackOff` imediatamente    | `ravendb/ravendb:latest` moveu binário de `/opt/RavenDB/` para `/usr/lib/ravendb/`        | 2026-04-25 |
 | [INC006](INC006-pvc-finalizer-namespace-terminating.md)            | RabbitMQ / PVC       | Namespace travado em `Terminating` após `kubectl delete namespace` | PVC com finalizer `kubernetes.io/pvc-protection` bloqueia remoção do namespace | 2026-04-25 |
+| [INC007](INC007-cnpg-webhook-not-ready.md)                         | PostgreSQL / CNPG    | `no endpoints available for service "cnpg-webhook-service"` ao instalar cluster | `helm install` do operador retorna antes do webhook ter endpoints; faltava `--wait` | 2026-04-27 |
 
 ---
 
 ## Recurring Patterns
 
 - **WSL2 reboots** always cause a cascade restart wave (~3–6 restarts/pod). All pods recover automatically. No action needed.
-- **Helm operators** must be installed **before** applying CRs/manifests that depend on them (ServiceAccounts, CRDs, webhooks).
+- **Helm operators** must be installed **before** applying CRs/manifests that depend on them (ServiceAccounts, CRDs, webhooks). Always add `--wait` to operator installs.
 - **StatefulSet namespaces delete** — always patch PVC finalizers (`kubernetes.io/pvc-protection`) before `kubectl delete namespace` to avoid stuck `Terminating` state. See INC006.
